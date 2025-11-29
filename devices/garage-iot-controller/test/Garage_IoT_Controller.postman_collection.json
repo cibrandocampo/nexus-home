@@ -1,0 +1,198 @@
+{
+	"info": {
+		"_postman_id": "garage-iot-controller",
+		"name": "Garage IoT Controller",
+		"description": "Colección para probar el API del controlador IoT del garaje",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/status",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"status"
+					]
+				},
+				"description": "Obtiene el estado actual del sistema: puerta, luz, noche, y información de red (IP, gateway, subnet, RSSI, SSID)"
+			},
+			"response": []
+		},
+		{
+			"name": "Door - Open",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"door\",\n  \"action\": \"open\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Abre la puerta del garaje (solo si está cerrada)"
+			},
+			"response": []
+		},
+		{
+			"name": "Door - Close",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"door\",\n  \"action\": \"close\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Cierra la puerta del garaje (solo si está abierta)"
+			},
+			"response": []
+		},
+		{
+			"name": "Lamp - ON (default duration)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"lamp\",\n  \"action\": \"on\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Enciende la lámpara con la duración por defecto"
+			},
+			"response": []
+		},
+		{
+			"name": "Lamp - ON (30 seconds)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"lamp\",\n  \"action\": \"on\",\n  \"duration\": 30\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Enciende la lámpara durante 30 segundos"
+			},
+			"response": []
+		},
+		{
+			"name": "Lamp - ON (60 seconds)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"lamp\",\n  \"action\": \"on\",\n  \"duration\": 60\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Enciende la lámpara durante 60 segundos"
+			},
+			"response": []
+		},
+		{
+			"name": "Lamp - OFF",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device\": \"lamp\",\n  \"action\": \"off\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/set",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"set"
+					]
+				},
+				"description": "Apaga la lámpara inmediatamente"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://192.168.1.190",
+			"type": "string"
+		}
+	]
+}
+
