@@ -2,52 +2,53 @@
 #include "wifi_manager.h"
 #include "api_server.h"
 
-// Pin definitions
-const int PIN_RELAY_LIGHT   = 2;   // OUTPUT: HIGH = ON
-const int PIN_RELAY_DOOR    = 3;   // OUTPUT: HIGH (pulse) = door trigger
-const int PIN_BUTTON_DIGITAL = 9;  // INPUT: HIGH = button pressed
-const int PIN_DOOR_DIGITAL  = 11;  // INPUT: HIGH = door closed
-const int PIN_LDR_DIGITAL   = 12;  // INPUT: HIGH = night
-const int PIN_DISPLAY_ENABLE = 13;  // INPUT_PULLUP: LOW = display OFF, HIGH/floating = display ON
-const int PIN_LED_DEBUG     = LED_BUILTIN; // ON = door open
+const int PIN_RELAY_LIGHT   = 2;
+const int PIN_RELAY_DOOR    = 3;
+const int PIN_BUTTON_DIGITAL = 9;
+const int PIN_DOOR_DIGITAL  = 11;
+const int PIN_LDR_DIGITAL   = 12;
+const int PIN_DISPLAY_ENABLE = 6;
+const int PIN_LED_DEBUG     = LED_BUILTIN;
 
-// Configuration
-const bool LDR_HIGH_IS_NIGHT = true;  // set false if LOW=night
+const bool LDR_HIGH_IS_NIGHT = true;
+const unsigned long LIGHT_DEFAULT_SECONDS = 120;
+const unsigned long DOOR_PULSE_MS         = 400;
+const unsigned long BUTTON_REFRACT_MS     = 1200;
 
-// Timing
-const unsigned long LIGHT_DEFAULT_SECONDS = 120;        // Default timeout
-const unsigned long DOOR_PULSE_MS         = 400;        // Door relay pulse duration
-const unsigned long BUTTON_REFRACT_MS     = 1200;       // Button refractory period
-
-// State variables
 bool lightOn = false;
 unsigned long lightStartMs = 0;
 unsigned long lightDurationMs = LIGHT_DEFAULT_SECONDS * 1000UL;
-
 bool doorPulseActive = false;
 unsigned long doorPulseStartMs = 0;
 
-bool buttonLatched = false;          // One-shot: true while "pressed"
-unsigned long lastButtonEventMs = 0; // Debounce/security window
+bool buttonLatched = false;
+unsigned long lastButtonEventMs = 0;
 
-// Sensor reading functions
 bool isNightNow() {
   int v = digitalRead(PIN_LDR_DIGITAL);
   return LDR_HIGH_IS_NIGHT ? (v == HIGH) : (v == LOW);
 }
 
 bool isDoorClosed() {
-  return (digitalRead(PIN_DOOR_DIGITAL) == HIGH);
+  // Double read with delay to filter out noise and floating pin states
+  // Only returns true if both reads are HIGH (door closed = HIGH signal)
+  int read1 = digitalRead(PIN_DOOR_DIGITAL);
+  delayMicroseconds(10);
+  int read2 = digitalRead(PIN_DOOR_DIGITAL);
+  return (read1 == HIGH && read2 == HIGH);
 }
 
 bool buttonJustPressed() {
+  // Debounced button press detection with refractory period
+  // Uses latching to ensure only one press event per button cycle
   unsigned long now = millis();
   
   if (now - lastButtonEventMs < BUTTON_REFRACT_MS) return false;
 
   if (!buttonLatched) {
+    // Waiting for button press: check if HIGH, debounce, then latch
     if (digitalRead(PIN_BUTTON_DIGITAL) == HIGH) {
-      delay(10); // Debounce delay
+      delay(10);
       if (digitalRead(PIN_BUTTON_DIGITAL) == HIGH) {
         buttonLatched = true;
         lastButtonEventMs = now;
@@ -55,6 +56,7 @@ bool buttonJustPressed() {
       }
     }
   } else {
+    // Button latched: wait for release to reset latch
     if (digitalRead(PIN_BUTTON_DIGITAL) == LOW) {
       buttonLatched = false;
       lastButtonEventMs = now;
@@ -63,7 +65,6 @@ bool buttonJustPressed() {
   return false;
 }
 
-// Actuator control
 void setLight(bool on) {
   digitalWrite(PIN_RELAY_LIGHT, on ? HIGH : LOW);
   lightOn = on;
@@ -92,6 +93,8 @@ void logDecision(const char* source, bool closed, bool night, bool willLight, un
 }
 
 void handleDoorAction(const char* source, long requestedSeconds) {
+  // Main door control logic: reads sensors, triggers door relay, and conditionally enables light
+  // Light only turns on if door is closed AND it's night time
   bool closed  = isDoorClosed();
   bool night   = isNightNow();
 
@@ -114,7 +117,7 @@ void setup() {
   pinMode(PIN_BUTTON_DIGITAL, INPUT);
   pinMode(PIN_DOOR_DIGITAL,   INPUT);
   pinMode(PIN_LDR_DIGITAL,    INPUT);
-  pinMode(PIN_DISPLAY_ENABLE, INPUT_PULLUP); // Pull-up: LOW = OFF, HIGH/floating = ON
+  pinMode(PIN_DISPLAY_ENABLE, INPUT_PULLUP);
   pinMode(PIN_LED_DEBUG,      OUTPUT);
 
   digitalWrite(PIN_RELAY_LIGHT, LOW);
@@ -124,25 +127,23 @@ void setup() {
   delay(200);
 
   matrix.begin();
-
-  // Try to connect WiFi on startup with limited timeout (15 seconds)
-  // If it fails, system continues working without WiFi
-  Serial.println("[INIT] Attempting WiFi connection (15s timeout)...");
   connectWiFiBlocking(15000);
-  Serial.println("[INIT] System ready - door logic operational");
 }
 
 void loop() {
+  // Handle manual button press
   if (buttonJustPressed()) {
     Serial.println("[BTN] Manual press -> Door action");
     handleDoorAction("BUTTON", -1);
   }
 
+  // Door relay pulse timeout: turn off relay after pulse duration
   if (doorPulseActive && (millis() - doorPulseStartMs >= DOOR_PULSE_MS)) {
     digitalWrite(PIN_RELAY_DOOR, LOW);
     doorPulseActive = false;
   }
 
+  // Light timeout: automatically turn off light after configured duration
   if (lightOn) {
     unsigned long el = millis() - lightStartMs;
     if (el >= lightDurationMs) {
@@ -152,14 +153,17 @@ void loop() {
     }
   }
 
+  // Debug LED: ON when door is open, OFF when closed
   digitalWrite(PIN_LED_DEBUG, isDoorClosed() ? LOW : HIGH);
 
+  // Update display status every 500ms
   static unsigned long lastStatusUpdate = 0;
   if (millis() - lastStatusUpdate >= 500) {
     mxShowStatus();
     lastStatusUpdate = millis();
   }
 
+  // Maintain WiFi connection and handle HTTP requests
   ensureWiFi();
   processHttpRequests();
 }

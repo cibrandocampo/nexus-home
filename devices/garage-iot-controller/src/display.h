@@ -13,13 +13,13 @@ extern bool doorPulseActive;
 extern bool buttonLatched;
 extern const int PIN_DISPLAY_ENABLE;
 
-// State for IP display
 unsigned long ipDisplayStartTime = 0;
 bool ipDisplayActive = false;
 uint8_t ipLastOctet = 0;
 
-// Set pixel in 12x8 LED matrix (row-major mapping with bit inversion)
 void setPixel(uint32_t frame[3], int x, int y) {
+  // Set a pixel in the 12x8 LED matrix frame buffer
+  // Frame is stored as 3 uint32_t values (96 bits total for 12x8 = 96 pixels)
   if (x < 0 || x >= 12 || y < 0 || y >= 8) return;
   
   int bitPos = y * 12 + x;
@@ -46,10 +46,7 @@ void drawBlock3x3(uint32_t frame[3], int x, int y) {
   }
 }
 
-// Draw a digit (3x4 pixels) at position x, y
 void drawDigit(uint32_t frame[3], int x, int y, int digit) {
-  // Patterns for digits 0-9 (3x4 pixels)
-  // Each digit is represented as 4 rows of 3 bits
   const uint8_t digitPatterns[10][4] = {
     {0b111, 0b101, 0b101, 0b111}, // 0
     {0b110, 0b010, 0b010, 0b111}, // 1
@@ -75,35 +72,28 @@ void drawDigit(uint32_t frame[3], int x, int y, int digit) {
   }
 }
 
-// Draw a dot (1x1 pixel)
 void drawDot(uint32_t frame[3], int x, int y) {
   setPixel(frame, x, y);
 }
 
-// Display IP last octet (e.g., ".190")
 void mxShowIP(uint8_t lastOctet) {
   ipDisplayStartTime = millis();
   ipDisplayActive = true;
   ipLastOctet = lastOctet;
 }
 
-// Check if IP display should be shown
 bool shouldShowIP() {
   if (!ipDisplayActive) return false;
-  if (millis() - ipDisplayStartTime > 5000) { // 5 seconds
+  if (millis() - ipDisplayStartTime > 5000) {
     ipDisplayActive = false;
     return false;
   }
   return true;
 }
 
-// Display status on 12x8 LED matrix
-// Layout: Inputs (2x2 blocks), Outputs (3x3 blocks), WiFi bar
-// Or IP display if active
 void mxShowStatus() {
-  // Check if display is enabled (pin 13: LOW = OFF, HIGH/floating = ON)
+  // Check if display is enabled via pin 6 (LOW = disabled, HIGH/floating = enabled)
   if (digitalRead(PIN_DISPLAY_ENABLE) == LOW) {
-    // Display disabled: show empty frame
     uint32_t frame[3] = {0, 0, 0};
     matrix.loadFrame(frame);
     return;
@@ -111,51 +101,43 @@ void mxShowStatus() {
   
   uint32_t frame[3] = {0, 0, 0};
   
-  // If IP display is active, show IP instead of status
+  // Priority: Show IP address if recently connected to WiFi
   if (shouldShowIP()) {
-    // Display "XXX" format (last octet of IP, without dot)
-    // Extract digits from last octet (0-255)
     int hundreds = ipLastOctet / 100;
     int tens = (ipLastOctet / 10) % 10;
     int ones = ipLastOctet % 10;
-    
-    // Calculate starting position to center the display
-    // Digits are 3x4, spacing is 1 pixel between digits
     int numDigits = (hundreds > 0 ? 3 : (tens > 0 ? 2 : 1));
-    int totalWidth = (numDigits * 3) + (numDigits > 1 ? (numDigits - 1) : 0); // digits(3 each) + spacing(1 between)
-    int startX = (12 - totalWidth) / 2; // Center horizontally
-    
-    // Draw digits (y=2 for 4-row digits, centered in 8-row matrix)
+    int totalWidth = (numDigits * 3) + (numDigits > 1 ? (numDigits - 1) : 0);
+    int startX = (12 - totalWidth) / 2;
     int digitX = startX;
     if (hundreds > 0) {
       drawDigit(frame, digitX, 2, hundreds);
-      digitX += 4; // 3 pixels digit + 1 pixel spacing
+      digitX += 4;
     }
     if (hundreds > 0 || tens > 0) {
       drawDigit(frame, digitX, 2, tens);
       digitX += 4;
     }
     drawDigit(frame, digitX, 2, ones);
-    
     matrix.loadFrame(frame);
     return;
   }
   
-  // Normal status display
+  // Normal status display: show sensor states and outputs
+  // Row 0: Input sensors (2x2 blocks)
   bool doorClosed = isDoorClosed();
   bool night = isNightNow();
   bool wifiConnected = (WiFi.status() == WL_CONNECTED);
   
-  // Row 0: Inputs (2x2 blocks with 1px spacing)
-  if (night) drawBlock2x2(frame, 0, 0);        // N (Night)
-  if (doorClosed) drawBlock2x2(frame, 3, 0);   // C (Closed)
-  if (buttonLatched) drawBlock2x2(frame, 6, 0); // I (Interruptor/Button)
+  if (night) drawBlock2x2(frame, 0, 0);        // Night sensor
+  if (doorClosed) drawBlock2x2(frame, 3, 0);   // Door closed
+  if (buttonLatched) drawBlock2x2(frame, 6, 0); // Button pressed
   
-  // Row 4-6: Outputs (3x3 blocks with 1px spacing)
-  if (lightOn) drawBlock3x3(frame, 0, 4);     // L (Light)
-  if (doorPulseActive) drawBlock3x3(frame, 4, 4); // P (Door Pulse)
+  // Row 4: Outputs (3x3 blocks)
+  if (lightOn) drawBlock3x3(frame, 0, 4);      // Light ON
+  if (doorPulseActive) drawBlock3x3(frame, 4, 4); // Door relay active
   
-  // WiFi bar (columns 10-11, vertical)
+  // Column 10-11: WiFi connection indicator (vertical bar)
   if (wifiConnected) {
     drawBlock2x2(frame, 10, 0);
     drawBlock2x2(frame, 10, 3);

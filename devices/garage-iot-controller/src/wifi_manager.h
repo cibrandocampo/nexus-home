@@ -3,8 +3,8 @@
 
 #include <WiFiS3.h>
 
-const char* WIFI_SSID     = "iot_wifi";
-const char* WIFI_PASSWORD = "iot_password";
+const char* WIFI_SSID     = "IOTwifiSSID";
+const char* WIFI_PASSWORD = "IOTwifiPASSWORD";
 WiFiServer server(80);
 
 extern void mxShowStatus();
@@ -32,7 +32,6 @@ bool connectWiFiBlocking(uint16_t timeoutMs = 20000) {
   Serial.print(timeoutMs);
   Serial.println(" ms)");
   
-  // WiFi.config(localIp, gateway, gateway, subnet); // descomenta si usas IP fija
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
   unsigned long t0 = millis();
@@ -280,4 +279,3 @@ void ensureWiFi() {
 }
 
 #endif
-

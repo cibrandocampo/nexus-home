@@ -14,10 +14,10 @@ Arduino-based IoT controller for an automated garage door and lighting system us
 |-----|------|-------------|
 | 2 | OUTPUT | Light Relay (HIGH = ON) |
 | 3 | OUTPUT | Door Relay (HIGH = pulse trigger) |
+| 6 | INPUT_PULLUP | Display Enable (LOW = display OFF, HIGH/floating = display ON) |
 | 9 | INPUT | Button Digital (HIGH = pressed) |
-| 11 | INPUT | Door Sensor Digital (HIGH = closed) |
+| 11 | INPUT | Door Sensor Digital (HIGH = closed, LOW/floating = open) |
 | 12 | INPUT | LDR Digital (HIGH = night) |
-| 13 | INPUT_PULLUP | Display Enable (LOW = display OFF, HIGH/floating = display ON) |
 | LED_BUILTIN | OUTPUT | Debug LED (ON = door open) |
 
 ## System Logic
@@ -31,7 +31,7 @@ Arduino-based IoT controller for an automated garage door and lighting system us
   - `close` action only works if door is open
 
 ### Light Control
-- **Default Duration**: 12 seconds
+- **Default Duration**: 120 seconds
 - **Auto Mode**: Activates when door is triggered and conditions are met (closed + night)
 - **Manual Control**: Via API (`lamp` device with `on`/`off` actions)
 - **Timeout**: Automatic turn-off after configured duration
@@ -39,8 +39,9 @@ Arduino-based IoT controller for an automated garage door and lighting system us
 ### Sensors
 
 #### Door Sensor (Pin 11)
-- **Digital Input**: HIGH = door closed, LOW = door open
-- **Debouncing**: 10ms delay + confirmation read to prevent false triggers
+- **Digital Input**: HIGH = door closed, LOW/floating = door open
+- **Reading**: Double read with 10μs delay to filter noise and floating states
+- **Note**: If connecting +5V directly, use a current-limiting resistor (10kΩ recommended) to prevent board resets
 
 #### Button (Pin 9)
 - **Digital Input**: HIGH = button pressed, LOW = released
@@ -70,8 +71,8 @@ The 12x8 LED matrix shows system status:
 - Automatically returns to status display after 5 seconds
 
 **Display Control:**
-- Connect pin 13 to GND to turn off display (saves power and reduces heat)
-- Leave pin 13 floating or disconnected for normal operation
+- Connect pin 6 to GND to turn off display (saves power and reduces heat)
+- Leave pin 6 floating or disconnected for normal operation
 
 ## WiFi & API
 
@@ -126,7 +127,7 @@ Control devices using `device` and `action` fields:
 {"device": "lamp", "action": "on", "duration": 30}
 {"device": "lamp", "action": "off"}
 ```
-- `on`: Turns lamp on (optional `duration` in seconds, default: 12)
+- `on`: Turns lamp on (optional `duration` in seconds, default: 120)
 - `off`: Turns lamp off immediately
 
 **Response Format:**
@@ -152,8 +153,6 @@ garage-iot-controller/
 └── README.md
 ```
 
-**Note**: In Arduino IDE, open the `src` folder as a sketch. The main file `src.ino` must have the same name as its parent folder.
-
 ## Configuration Constants
 
 Defined in `src/src.ino`:
@@ -163,9 +162,9 @@ Defined in `src/src.ino`:
 LDR_HIGH_IS_NIGHT = true  // Set false if LOW=night
 
 // Timing
-LIGHT_DEFAULT_SECONDS = 12    // Default light timeout
-DOOR_PULSE_MS = 400           // Door relay pulse duration
-BUTTON_REFRACT_MS = 1200      // Button refractory period
+LIGHT_DEFAULT_SECONDS = 120   // Default light timeout (seconds)
+DOOR_PULSE_MS = 400           // Door relay pulse duration (milliseconds)
+BUTTON_REFRACT_MS = 1200      // Button refractory period (milliseconds)
 ```
 
 ## Features
@@ -177,14 +176,41 @@ BUTTON_REFRACT_MS = 1200      // Button refractory period
 - **WiFi Reconnection**: Automatic non-blocking reconnection attempts every 60 seconds
 - **Visual Status**: Real-time status display on LED matrix
 - **IP Display**: Shows last octet of IP address when WiFi connects
-- **Display Control**: Pin 13 can disable display to save power
+- **Display Control**: Pin 6 can disable display to save power
 - **REST API**: Full control via HTTP API with state validation
 - **Error Handling**: API returns descriptive errors for invalid operations
 
+## Installation & Setup
+
+### Arduino IDE Configuration
+
+**IMPORTANT**: Before compiling the project, make sure you have the Arduino UNO R4 core installed:
+
+#### 1. Install Arduino UNO R4 Core
+
+1. Open Arduino IDE
+2. Go to **Tools → Board → Boards Manager...**
+3. Search for "UNO R4"
+4. Install the **"Arduino UNO R4 Boards"** package (package `renesas_uno`)
+
+This package includes the necessary internal libraries (`Arduino_LED_Matrix.h` and `WiFiS3.h`), no need to install them separately.
+
+#### 2. Select the Correct Board
+
+After installing the core:
+
+1. Go to **Tools → Board**
+2. Under **Arduino UNO R4 Boards**, select **"Arduino UNO R4 WiFi"** (not the classic UNO or Minima)
+3. Also select the correct **Port** in **Tools → Port**
+
+**⚠️ Important**: If you have a different board selected (e.g., "Arduino Uno"), the compiler won't see the LED Matrix library and will show the error `Arduino_LED_Matrix.h: No such file or directory`.
+
+**Note**: In Arduino IDE, open the `src` folder as a sketch. The main file `src.ino` must have the same name as its parent folder.
+
 ## Libraries Required
 
-- `Arduino_LED_Matrix` (built-in for UNO R4 WiFi)
-- `WiFiS3` (built-in for UNO R4 WiFi)
+- `Arduino_LED_Matrix` (included in Arduino UNO R4 Boards package)
+- `WiFiS3` (included in Arduino UNO R4 Boards package)
 
 ## License
 
