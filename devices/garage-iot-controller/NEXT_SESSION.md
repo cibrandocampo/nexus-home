@@ -1,4 +1,8 @@
-# Next session: update server, then the real installation
+# Next session: install v2 on the garage board, then the update server
+
+**Start here (2026-11-17, end of day):** the user rewired the garage board (4.7 kΩ pull-ups to 5V, contacts
+to GND) and was about to measure it. Follow [INSTALL_GARAGE.md](INSTALL_GARAGE.md), from step 1.
+The user wants answers in Spanish (code and repository text in English).
 
 Hand-off updated on 2026-11-17. Read [NOTES.md](NOTES.md) first for the full context and decisions.
 Delete this file once the steps below are done.
@@ -62,8 +66,8 @@ Home Assistant gateway. Ask the user for the server details (Docker / compose, a
 
 ## Step 3: real installation
 
-1. Rewire the inputs (see "Wiring" in README): the second wire of the button and of the door sensor
-   goes to GND instead of 5V, and the 4.7 kΩ pull-downs on pins 9 and 11 are removed or moved to 5V.
+1. Rewiring: done by the user on 2026-11-17 (pull-ups to 5V, contacts to GND); to be measured. Steps in
+   [INSTALL_GARAGE.md](INSTALL_GARAGE.md).
 2. Read `modem_fw` from `/api/v1/info` on that board (OTA needs 0.5.0 or later).
 3. Confirm what a pulse does while the door is moving (stop or reverse).
 4. Add 10 kΩ from pins 2 and 3 to GND unless the relay module already has them (README, "Wiring").
