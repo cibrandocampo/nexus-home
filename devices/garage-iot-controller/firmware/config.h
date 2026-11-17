@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 #ifndef FW_VERSION  // can be overridden from the build command (bench tests of the update)
-#define FW_VERSION "2.0.0"
+#define FW_VERSION "2.0.1"
 #endif
 
 namespace cfg {

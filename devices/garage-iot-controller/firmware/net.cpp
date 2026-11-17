@@ -34,9 +34,24 @@ char     trialPass[sizeof settings::Data::password];
 const char* targetSsid() { return trial ? trialSsid : settings::get().ssid; }
 const char* targetPass() { return trial ? trialPass : settings::get().password; }
 
-void readMac() {
-  uint8_t m[6] = {0};
+bool macRead(uint8_t m[6]) {
+  for (int i = 0; i < 6; ++i) m[i] = 0;
   WiFi.macAddress(m);
+  for (int i = 0; i < 6; ++i)
+    if (m[i]) return true;
+  return false;
+}
+
+// The modem only reports its MAC once a WiFi mode is set, and after a power cut it starts with none, so
+// WiFi.macAddress() returns zeros. In that case set station mode (as WiFi.begin() does) and ask again.
+void readMac() {
+  uint8_t m[6];
+  if (!macRead(m)) {
+    std::string res;
+    modem.begin();
+    modem.write(std::string(PROMPT(_MODE)), res, "%s%d\r\n", CMD_WRITE(_MODE), 1);
+    macRead(m);
+  }
   snprintf(macStr, sizeof macStr, "%02X:%02X:%02X:%02X:%02X:%02X", m[0], m[1], m[2], m[3], m[4], m[5]);
   snprintf(idStr, sizeof idStr, "garage-%02x%02x%02x", m[3], m[4], m[5]);
 }
@@ -48,6 +63,7 @@ void setIp(IPAddress a) {
 
 void onConnected() {
   setIp(WiFi.localIP());
+  if (strcmp(macStr, "00:00:00:00:00:00") == 0) readMac();  // last resort: the modem is in station mode now
   lastRssi = WiFi.RSSI();
   lastRssiAt = millis();
   retryMs = RETRY_MIN_MS;
