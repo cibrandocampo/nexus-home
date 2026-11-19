@@ -209,6 +209,17 @@ Bench board: a new UNO R4 WiFi with nothing wired, not the one installed in the 
     later the Home Assistant gateway.
 9. [x] Commit on the branch `garage-v2` (2026-11-17). [ ] Push and PR when the user asks.
 10. [ ] Home Assistant middleware.
+11. [ ] **WiFi network picker** (agreed with the user on 2026-11-19, for after 2.0.3): a list of the networks
+    found instead of typing the SSID.
+    - Setup mode: scan at boot *before* `WiFi.beginAP()` (the AP is started in mode 2, AP only, and it is not
+      known whether the module firmware can scan with the AP up). Keep up to ~20 networks, one per SSID with the
+      best RSSI, sorted by signal; serve them on a setup-only endpoint (e.g. `GET /api/v1/setup/networks`).
+    - Setup page: a select with the signal bars of the status block, a lock for protected networks, and
+      "Other network…" to type a hidden SSID; an open network hides the password field.
+    - "Scan again" button only if a scan with the AP up works on the bench board (try it there); otherwise
+      restarting in setup mode refreshes the list.
+    - Also in Settings (normal mode, to change network): scanning while connected as a station is fine.
+    - `WiFi.scanNetworks()` (WiFiS3, core 1.6.0) sends `AT+WIFISCAN` and returns SSID, RSSI and encryption.
 
 ## OTA: network updates
 

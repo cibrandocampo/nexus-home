@@ -69,6 +69,15 @@ inline Result str(const char* body, const char* key, char* out, size_t n) {
   return Ok;
 }
 
+// Reads a true/false value.
+inline Result flag(const char* body, const char* key, bool& out) {
+  const char* p = find(body, key);
+  if (!p) return Missing;
+  if (!strncmp(p, "true", 4)) { out = true; return Ok; }
+  if (!strncmp(p, "false", 5)) { out = false; return Ok; }
+  return Invalid;
+}
+
 // Reads a non-negative integer value.
 inline Result num(const char* body, const char* key, uint32_t& out) {
   const char* p = find(body, key);

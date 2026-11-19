@@ -18,7 +18,7 @@ static int failures = 0;
 
 static void run(uint32_t ms) { for (uint32_t i = 0; i < ms / 10; ++i) tick(); }
 static void sensor(bool closed) { pins[cfg::PIN_DOOR_SENSOR] = (closed == cfg::DOOR_SENSOR_ACTIVE_LOW) ? LOW : HIGH; }
-static void night(bool n) { pins[cfg::PIN_LDR] = (n == cfg::LDR_HIGH_IS_NIGHT); }
+static void night(bool n) { pins[cfg::PIN_LIGHT_LEVEL] = n ? 900 : 100; }  // read by begin()
 static void button(bool pressed) { pins[cfg::PIN_BUTTON] = (pressed == cfg::BUTTON_ACTIVE_LOW) ? LOW : HIGH; }
 static void press() { button(true); run(100); button(false); run(100); }
 static void boot(bool closed, bool isNight) {
@@ -166,6 +166,7 @@ int main() {
   LogEntry ev[cfg::LOG_SIZE];
   CHECK(recent(ev, cfg::LOG_SIZE) == 2 && ev[1].event == Event::Boot);
   CHECK(ev[0].event == Event::DoorClosed && ev[0].source == Source::Sensor && ev[0].reason == Reason::Startup);
+  CHECK(state().doorSource == Source::None);  // nobody moved it: read from the sensor at boot
   run(5000);
   press();
   CHECK(recent(ev, cfg::LOG_SIZE) == 4);  // a press that fires the relay is logged as the door event only
@@ -301,7 +302,7 @@ int main() {
 
   // Door timings from the settings apply to the next movement.
   boot(true, false);
-  setTimings(10, 15);
+  configure({10, 15, cfg::LIGHT_DEFAULT_S, cfg::NIGHT_LEVEL_DEFAULT});
   doorOpen();
   sensor(false);
   run(9900);
@@ -315,7 +316,57 @@ int main() {
   run(200);
   CHECK(state().closeFailed);
   CHECK(recent(ev, 1) == 1 && ev[0].event == Event::CloseFailed && ev[0].value == 15);
-  setTimings(cfg::DOOR_TRAVEL_MS / 1000, cfg::DOOR_CLOSE_TIMEOUT_MS / 1000);
+  configure({cfg::DOOR_TRAVEL_MS / 1000, cfg::DOOR_CLOSE_TIMEOUT_MS / 1000, cfg::LIGHT_DEFAULT_S, cfg::NIGHT_LEVEL_DEFAULT});
+
+  // Night from the light level: must hold DEBOUNCE_NIGHT_MS, hysteresis, own lamp ignored.
+  const Config def{cfg::DOOR_TRAVEL_MS / 1000, cfg::DOOR_CLOSE_TIMEOUT_MS / 1000, cfg::LIGHT_DEFAULT_S, 700};
+  boot(true, false);
+  configure(def);
+  run(cfg::LAMP_SETTLE_MS);  // the lamp settle time also runs after boot
+  CHECK(!state().night);
+  testLightLevel(720);
+  run(cfg::DEBOUNCE_NIGHT_MS - 1000);
+  CHECK(!state().night);
+  run(1500);
+  CHECK(state().night && state().lightLevel == 720);
+  testLightLevel(690);  // inside the hysteresis band: still night
+  run(cfg::DEBOUNCE_NIGHT_MS + 10000);
+  CHECK(state().night);
+  testLightLevel(700 - cfg::NIGHT_HYSTERESIS - 1);
+  run(cfg::DEBOUNCE_NIGHT_MS + 500);
+  CHECK(!state().night);
+  testLightLevel(900);  // dark for less than the debounce time (someone in front of the sensor)
+  run(30000);
+  testLightLevel(100);
+  run(cfg::DEBOUNCE_NIGHT_MS + 10000);
+  CHECK(!state().night);
+  testLightLevel(900);
+  run(cfg::DEBOUNCE_NIGHT_MS + 500);
+  CHECK(state().night);
+  lightOn(0);
+  testLightLevel(300);  // the sensor sees our lamp
+  run(5 * cfg::DEBOUNCE_NIGHT_MS);
+  CHECK(state().night);
+  lightOff();  // still bright after the lamp went off: real daylight, day once settled and held
+  run(cfg::LAMP_SETTLE_MS + cfg::DEBOUNCE_NIGHT_MS - 1000);
+  CHECK(state().night);
+  run(2000);
+  CHECK(!state().night);
+  // At boot the stored night level decides at once, not a minute later.
+  boot(true, false);
+  testLightLevel(650);
+  configure({20, 40, 120, 600});
+  CHECK(state().night);
+  // The light time from the settings: auto light, toggle and the API default.
+  boot(true, true);
+  configure({20, 40, 300, 700});
+  CHECK(lightDefaultS() == 300);
+  press();
+  CHECK(recent(ev, 1) == 1 && ev[0].event == Event::LightOn && ev[0].source == Source::Auto && ev[0].value == 300);
+  lightOff();
+  lightToggle();
+  CHECK(state().light && state().lightRemainingS == 300);
+  configure(def);
 
   // Settings: defaults when the flash is blank, save/load, newest copy wins, a corrupted copy is skipped.
   memset(settings::testFlash(), 0xFF, 2048);
@@ -340,14 +391,56 @@ int main() {
   settings::begin();
   CHECK(!settings::stored());
 
+  // Settings written by 2.0.0-2.0.2 are kept after the update, new fields at their defaults.
+  memset(settings::testFlash(), 0xFF, 2048);
+  settings::begin();
+  d = settings::defaults();
+  strcpy(d.ssid, "home");
+  strcpy(d.password, "secret123");
+  strcpy(d.token, "tok-12345");
+  strcpy(d.name, "IOT-Garaxe");
+  d.openS = 25;
+  d.closeS = 150;  // valid before 2.0.3 (up to 180): brought into the new range, settings kept
+  CHECK(settings::testSaveV1(d));
+  settings::begin();
+  CHECK(settings::stored() && !strcmp(settings::get().ssid, "home") && !strcmp(settings::get().password, "secret123") &&
+        !strcmp(settings::get().token, "tok-12345") && !strcmp(settings::get().name, "IOT-Garaxe"));
+  CHECK(settings::get().openS == 25 && settings::get().closeS == settings::CLOSE_MAX_S && settings::get().lightS == cfg::LIGHT_DEFAULT_S &&
+        settings::get().nightLevel == cfg::NIGHT_LEVEL_DEFAULT && settings::get().display == 1);
+  d = settings::get();
+  d.display = 0;
+  d.nightLevel = 650;
+  d.lightS = 300;
+  CHECK(settings::save(d));  // new format, in the other block
+  settings::begin();
+  CHECK(settings::get().nightLevel == 650 && settings::get().lightS == 300 && settings::get().display == 0 &&
+        !strcmp(settings::get().ssid, "home"));
+  settings::testFlash()[1024 + 20] ^= 0x55;  // new copy corrupted: the old one is still there
+  settings::begin();
+  CHECK(settings::stored() && settings::get().nightLevel == cfg::NIGHT_LEVEL_DEFAULT && settings::get().openS == 25);
+
   // Settings validation.
   d = settings::defaults();
   CHECK(settings::validate(d) == nullptr);
   d.openS = 4;
   CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_open_time"));
   d = settings::defaults();
-  d.closeS = 181;
+  d.closeS = 101;
   CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_close_time"));
+  d = settings::defaults();
+  d.lightS = 9;
+  CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_light_time"));
+  d.lightS = 601;
+  CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_light_time"));
+  d = settings::defaults();
+  d.nightLevel = 0;
+  CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_night_level"));
+  d.nightLevel = 1024;
+  CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_night_level"));
+  d = settings::defaults();
+  CHECK(d.display == 1);
+  d.display = 2;
+  CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_display"));
   d = settings::defaults();
   strcpy(d.token, "short");
   CHECK(settings::validate(d) && !strcmp(settings::validate(d), "invalid_token"));
@@ -375,6 +468,11 @@ int main() {
   CHECK(json::str("{\"a\":\"caf\xc3\xa9\"}", "a", out, sizeof out) == json::Ok && !strcmp(out, "caf\xc3\xa9"));
   CHECK(json::str("{\"a\":\"unterminated}", "a", out, sizeof out) == json::Invalid);
   CHECK(json::num("{\"a\":1.5}", "a", n) == json::Invalid);
+  bool f = true;
+  CHECK(json::flag("{\"display\": false}", "display", f) == json::Ok && !f);
+  CHECK(json::flag("{\"display\":true}", "display", f) == json::Ok && f);
+  CHECK(json::flag("{\"display\":1}", "display", f) == json::Invalid);
+  CHECK(json::flag("{}", "display", f) == json::Missing);
 
   printf(failures ? "%d FAILED\n" : "all tests passed\n", failures);
   return failures ? EXIT_FAILURE : EXIT_SUCCESS;

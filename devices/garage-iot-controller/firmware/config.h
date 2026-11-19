@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 #ifndef FW_VERSION  // can be overridden from the build command (bench tests of the update)
-#define FW_VERSION "2.0.2"
+#define FW_VERSION "2.0.3"
 #endif
 
 namespace cfg {
@@ -11,14 +11,10 @@ namespace cfg {
 // ---- Pins ----
 constexpr uint8_t PIN_RELAY_LIGHT    = 2;   // OUTPUT, HIGH = light on
 constexpr uint8_t PIN_RELAY_DOOR     = 3;   // OUTPUT, HIGH pulse = trigger opener
-constexpr uint8_t PIN_DISPLAY_ENABLE = 6;   // INPUT_PULLUP, LOW = LED matrix off
 constexpr uint8_t PIN_BUTTON         = 9;   // INPUT_PULLUP, button wired between the pin and GND
 constexpr uint8_t PIN_DOOR_SENSOR    = 11;  // INPUT_PULLUP, contact to GND while the door is closed
-constexpr uint8_t PIN_LDR            = 12;  // INPUT, digital light sensor
-constexpr uint8_t PIN_LIGHT_LEVEL    = A0;  // analog output (AO) of the same light sensor module, only measured for now
+constexpr uint8_t PIN_LIGHT_LEVEL    = A0;  // analog output (AO) of the light sensor module: higher = darker
 constexpr uint8_t PIN_SETUP          = 7;   // INPUT_PULLUP, jumper to GND at boot = setup mode (own WiFi network)
-
-constexpr bool LDR_HIGH_IS_NIGHT = true;
 
 // Button and door sensor are active low: the internal pull-up keeps the pin at 5 V and the contact
 // connects it to GND. A loose or broken wire therefore reads "not pressed" / "door not closed".
@@ -39,15 +35,21 @@ constexpr uint32_t DOOR_CLOSE_TIMEOUT_MS = 40000;
 constexpr uint32_t DOOR_SETTLE_MS        = 3000;
 
 // ---- Light ----
-constexpr uint32_t LIGHT_DEFAULT_S = 120;    // default timer for auto light and API "on"
+constexpr uint32_t LIGHT_DEFAULT_S = 120;    // default timer for auto light and API "on" (each board stores its own)
 constexpr uint32_t LIGHT_MAX_S     = 86400;  // upper bound accepted by the API
 constexpr bool     AUTO_LIGHT      = true;   // light on when the door starts opening at night
 
 // ---- Input filtering ----
 constexpr uint32_t DEBOUNCE_BUTTON_MS = 30;
 constexpr uint32_t DEBOUNCE_DOOR_MS   = 50;
-constexpr uint32_t DEBOUNCE_NIGHT_MS  = 2000;  // avoids flicker at dusk
-constexpr uint32_t LIGHT_SAMPLE_MS    = 1000;  // light level: one sample (average of 8 reads) per second
+constexpr uint32_t DEBOUNCE_NIGHT_MS  = 60000; // night or day must hold this long: clouds, people, car lights
+
+// ---- Night (light level from the sensor's analog output, 0-1023, higher = darker) ----
+constexpr uint32_t LIGHT_SAMPLE_MS     = 1000;  // one sample (average of 8 reads) per second
+constexpr uint16_t NIGHT_LEVEL_DEFAULT = 700;   // night from this level up (each board stores its own);
+                                                // 700 = "dark, the light is welcome" on the real garage, 2026-11-19
+constexpr uint16_t NIGHT_HYSTERESIS    = 30;    // back to day only below the night level minus this
+constexpr uint32_t LAMP_SETTLE_MS      = 10000; // the sensor sees our own lamp: ignored while on and this long after
 
 // ---- WiFi ----
 constexpr uint32_t WIFI_TRIAL_S = 60;  // a new network from the settings page must connect within this, or the old one is restored

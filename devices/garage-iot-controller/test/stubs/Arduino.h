@@ -12,7 +12,7 @@ extern uint32_t fakeMillis;
 inline void pinMode(int, int) {}
 inline int digitalRead(int p) { return pins[p]; }
 constexpr int A0 = 14;
-inline int analogRead(int) { return 0; }
+inline int analogRead(int p) { return pins[p]; }
 inline void digitalWrite(int p, int v) { pins[p] = v; }
 inline void noInterrupts() {}
 inline void interrupts() {}

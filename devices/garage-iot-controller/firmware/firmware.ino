@@ -26,7 +26,9 @@ static void logChanges() {
 void setup() {
   garage::begin();  // first: relays to a safe state and logic running
   settings::begin();
-  garage::setTimings(settings::get().openS, settings::get().closeS);
+  const settings::Data& d = settings::get();
+  garage::configure({d.openS, d.closeS, d.lightS, d.nightLevel});
+  display::setEnabled(d.display);
   Serial.begin(115200);
   pinMode(cfg::PIN_SETUP, INPUT_PULLUP);
   delay(5);  // let the pull-up settle

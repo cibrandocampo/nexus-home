@@ -38,6 +38,17 @@ details[open] summary{margin-bottom:10px}
 label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
 input{width:100%;font:inherit;color:var(--fg);background:#253041;border:1px solid var(--line);border-radius:10px;padding:11px 12px}
 .hint{font-size:13px;color:var(--mut);margin-top:4px}
+input[type=range]{padding:0;border:0;background:none;accent-color:var(--acc);height:32px}
+label b{color:var(--fg);font-weight:600;float:right}
+dd svg{vertical-align:-3px;margin-right:6px}
+dd.fx{display:flex;justify-content:flex-end;align-items:center}
+.sw{position:relative;display:inline-block;width:40px;height:22px;margin:-3px 0 -3px 10px}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;background:#3a4556;border-radius:11px;transition:.2s;cursor:pointer}
+.sw span:before{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+span{background:var(--ok)}.sw input:checked+span:before{transform:translateX(18px)}
+.sw input:disabled+span{opacity:.4;cursor:default}
+.sky{letter-spacing:2px;white-space:nowrap;font-size:17px;line-height:1}.sky i{font-style:normal;color:#8fb3ff}.sky i.s{color:var(--warn)}
 .sep{border-top:1px solid var(--line);margin:16px 0 4px}
 .alert{background:#3a1d22;border:1px solid var(--bad);color:#ffb4b4;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:14px}
 #log{list-style:none;margin:0;padding:0;font-size:14px}
@@ -78,8 +89,9 @@ input{width:100%;font:inherit;color:var(--fg);background:#253041;border:1px soli
 <section><h2>Status</h2><dl>
 <dt>Ambient light</dt><dd id="ni">—</dd>
 <dt>Door sensor</dt><dd id="se">—</dd>
-<dt>Last triggered by</dt><dd id="so">—</dd>
-<dt>WiFi</dt><dd id="wf">—</dd>
+<dt>WiFi signal</dt><dd id="wf">—</dd>
+<dt>IP address</dt><dd id="ip">—</dd>
+<dt>LED matrix</dt><dd class="fx"><span id="dmv">—</span><label class="sw"><input type="checkbox" id="dm" disabled aria-label="LED matrix"><span></span></label></dd>
 <dt>Uptime</dt><dd id="up">—</dd>
 <dt>Firmware</dt><dd id="fw">—</dd>
 <dt>Last restart</dt><dd id="rr">—</dd>
@@ -88,9 +100,14 @@ input{width:100%;font:inherit;color:var(--fg);background:#253041;border:1px soli
 <section><details id="set"><summary><h2>Settings</h2></summary>
 <form id="sf">
 <label for="s_name">Name</label><input id="s_name" maxlength="32" required>
-<label for="s_open">Opening time (seconds)</label><input id="s_open" type="number" min="5" max="120" required>
-<label for="s_close">Close confirmation (seconds)</label><input id="s_close" type="number" min="10" max="180" required>
+<label for="s_open">Opening time <b id="v_open"></b></label><input id="s_open" type="range" min="5" max="100" step="1">
+<label for="s_close">Close confirmation <b id="v_close"></b></label><input id="s_close" type="range" min="10" max="100" step="1">
 <div class="hint">A close not confirmed by the sensor within this time raises an alert.</div>
+<label for="s_light">Light time <b id="v_light"></b></label><input id="s_light" type="range" min="10" max="600" step="10">
+<div class="hint">How long the light stays on when the door opens at night. Also used by the API when no duration is given.</div>
+<label for="s_night">Night from <b id="v_night"></b></label><input id="s_night" type="range" min="1" max="1023" step="1">
+<div class="row"><button type="button" id="s_now">Use current light: <span id="s_lvl">—</span></button></div>
+<div class="hint">Night from this level, or darker. It must hold for a minute, and the sensor is not read while the garage light is on.</div>
 <label for="s_ssid">WiFi network</label><input id="s_ssid" maxlength="32" required autocapitalize="none" autocomplete="off">
 <label for="s_pass">WiFi password</label><input id="s_pass" type="password" maxlength="63" placeholder="(unchanged)" autocomplete="new-password">
 <div class="hint">A new network is tried first: if it does not connect within 60 s, the controller goes back to the current one.</div>
@@ -111,7 +128,10 @@ input{width:100%;font:inherit;color:var(--fg);background:#253041;border:1px soli
 </main><script>
 const $=id=>document.getElementById(id),API='/api/v1/';
 const DOOR={closed:['Closed','--ok'],open:['Open','--warn'],opening:['Opening…','--acc'],closing:['Closing…','--acc']};
-const SRC={button:'button or remote',api:'web / API',sensor:'closed sensor',auto:'automatic',none:'—'};
+// Who moved the door last, under its state. "sensor": the board sent no pulse, only the sensor saw it.
+const BY={button:'push button or remote',api:'from the web / API',sensor:'not from this controller (by hand or another remote)'};
+// Door sensor: padlock, closed (green) or open (orange).
+const lock=c=>'<svg width="14" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="7" width="11" height="8" rx="1.5" fill="var('+(c?'--ok':'--warn')+')"/><path d="'+(c?'M5 7V5a3 3 0 0 1 6 0v2':'M5 7V4.5a3 3 0 0 1 6 0')+'" fill="none" stroke="var('+(c?'--ok':'--warn')+')" stroke-width="1.7"/></svg>';
 // Log entry -> [what happened, why]. Door entries read as cause -> effect.
 const WHO={button:'Push button or remote',api:'Web / API command',sensor:'Closed sensor',auto:'Automatic'};
 const lt=v=>v?dur(v).replace(/ 0 s$/,'').replace(/ 0 min$/,''):'no limit';
@@ -155,6 +175,16 @@ const RR={power:'power on',pin:'reset button',software:'firmware update or resta
 let log=null,logRev=-1;
 const ERR={door_busy:'The door is moving, please wait',unauthorized:'Wrong token',forbidden:'Request rejected'};
 let last=null,lastAt=0,fails=0,busy=false,mt;
+// Light level (0 bright - 1023 dark) as five icons, suns giving way to moons.
+const moons=l=>Math.round(l*5/1023);
+const sky=l=>{const m=moons(l);return '<span class="sky">'+'<i class="s">\u2600\uFE0E</i>'.repeat(5-m)+'<i>\u263E\uFE0E</i>'.repeat(m)+'</span>'};
+// WiFi signal: four bars, coloured and named by quality.
+const SIG=[[-55,4,'Excellent','--ok'],[-67,3,'Good','--ok'],[-75,2,'Fair','--warn'],[-200,1,'Poor','--bad']];
+function signal(r){
+  const[,n,w,c]=SIG.find(q=>r>=q[0]);let b='';
+  for(let i=0;i<4;i++)b+='<rect x="'+(i*4)+'" y="'+(12-i*3)+'" width="3" height="'+(4+i*3)+'" rx="1" fill="var('+(i<n?c:'--line')+')"/>';
+  return '<svg width="19" height="18" viewBox="0 0 15 16" aria-hidden="true">'+b+'</svg>'+w+' ('+r+' dBm)';
+}
 const dur=s=>s<60?s+' s':s<3600?Math.floor(s/60)+' min '+(s%60)+' s':s<86400?Math.floor(s/3600)+' h '+Math.floor(s%3600/60)+' min':Math.floor(s/86400)+' d '+Math.floor(s%86400/3600)+' h';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 // Recent events: relative time. Older ones: clock time, with the weekday or date if not today.
@@ -170,7 +200,7 @@ function render(){
   const s=last;if(!s)return;
   const el=Math.floor((Date.now()-lastAt)/1000),d=DOOR[s.door.state],mv=s.door.moving;
   $('ds').textContent=d[0];$('dd').style.background='var('+d[1]+')';$('dd').className='dot'+(mv?' blink':'');
-  $('dsub').textContent='for '+dur(s.door.since_s+el);
+  $('dsub').textContent='for '+dur(s.door.since_s+el)+(BY[s.door.last_source]?' · '+BY[s.door.last_source]:'');
   $('dfail').hidden=!s.door.close_failed;
   $('bo').disabled=busy||s.door.state!='closed';
   $('bc').disabled=busy||s.door.state!='open';
@@ -179,11 +209,12 @@ function render(){
   $('ls').textContent=on?'On':'Off';$('ld').style.background=on?'var(--warn)':'';
   $('lsub').textContent=!on?'':s.light.timed?'turns off in '+dur(rem):'no timer';
   $('bof').disabled=busy||!on;$('bon').disabled=busy;
-  $('ni').textContent=s.night?'Night':'Day';
-  $('se').textContent=s.door.sensor_closed?'closed':'not closed';
-  $('so').textContent=SRC[s.door.last_source]||s.door.last_source;
-  $('wf').textContent=s.wifi.ip+' · '+s.wifi.rssi+' dBm';
+  $('ni').innerHTML=(s.night?'Night':'Day')+' – '+sky(s.light_level)+' ('+s.light_level+')';
+  $('s_lvl').innerHTML=sky(s.light_level)+' ('+s.light_level+')';
+  $('se').innerHTML=lock(s.door.sensor_closed)+(s.door.sensor_closed?'Closed':'Not closed');
+  $('wf').innerHTML=signal(s.wifi.rssi);$('ip').textContent=s.wifi.ip;
   $('up').textContent=dur(s.uptime_s+el);
+  $('dmv').textContent=s.display?'On':'Off';$('dm').checked=s.display;$('dm').disabled=busy;
 }
 function online(ok){const c=$('conn');c.textContent=ok?'online':'offline';c.className=ok?'':'off'}
 // Builds the list once per new log, so a scrolled list keeps its position.
@@ -242,13 +273,28 @@ async function loadSettings(){
     const{r,j}=await api('GET','settings');
     if(!r.ok){msg(errText(r,j));$('set').open=false;return}
     $('s_name').value=j.name;$('s_open').value=j.open_s;$('s_close').value=j.close_s;$('s_ssid').value=j.wifi_ssid;
+    $('s_light').value=j.light_s;$('s_night').value=j.night_level;showRanges();
     $('s_pass').value='';$('s_token').value='';
   }catch(e){msg('Cannot reach the garage controller')}
 }
 $('set').ontoggle=()=>{if($('set').open)loadSettings()};
+// The LED matrix switch is a stored setting: kept after a restart.
+$('dm').onchange=async()=>{
+  if(!last)return;busy=true;render();
+  try{const{r,j}=await api('POST','settings',{display:!last.display});if(!r.ok)msg(errText(r,j));else{last.display=j.settings.display;}}
+  catch(e){msg('Cannot reach the garage controller')}
+  busy=false;render();
+};
+function showRanges(){
+  $('v_open').textContent=$('s_open').value+' s';$('v_close').textContent=$('s_close').value+' s';
+  $('v_light').textContent=lt(+$('s_light').value);
+  const n=+$('s_night').value;$('v_night').innerHTML=sky(n)+' ('+n+')';
+}
+for(const k of['s_open','s_close','s_light','s_night'])$(k).oninput=showRanges;
+$('s_now').onclick=()=>{if(last){$('s_night').value=last.light_level;showRanges()}};
 $('sf').onsubmit=async ev=>{
   ev.preventDefault();$('s_save').disabled=true;
-  const b={name:$('s_name').value.trim(),open_s:+$('s_open').value,close_s:+$('s_close').value,wifi_ssid:$('s_ssid').value};
+  const b={name:$('s_name').value.trim(),open_s:+$('s_open').value,close_s:+$('s_close').value,light_s:+$('s_light').value,night_level:+$('s_night').value,wifi_ssid:$('s_ssid').value};
   if($('s_pass').value)b.wifi_password=$('s_pass').value;
   const nt=$('s_token').value.trim();if(nt)b.token=nt;
   try{

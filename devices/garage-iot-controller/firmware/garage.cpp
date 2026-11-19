@@ -34,10 +34,18 @@ struct Core {
   uint32_t lightTicks;
   uint32_t openTicks;   // opening time (setting)
   uint32_t closeTicks;  // close confirmation timeout (setting)
+  uint32_t lightDefTicks; // light timer for the auto light and the API without a duration (setting)
+  uint64_t lightOffAt;  // tick when the light was last switched off
+  bool     nightSet;    // night decided from the stored night level (first configure() after boot)
 };
 
 volatile bool timerRunning = false;
 Core s;
+
+// Light level and the night decision taken from it, before the debounce. Written by the main loop only.
+uint16_t      lightLevel = 0;
+uint16_t      nightLevel = cfg::NIGHT_LEVEL_DEFAULT;
+volatile bool rawNight = false;
 
 LogEntry logBuf[cfg::LOG_SIZE];
 size_t   logHead = 0, logCount = 0;
@@ -77,7 +85,6 @@ bool debounce(Input& in, bool raw, uint16_t ticks) {
 
 bool readButton() { return (digitalRead(cfg::PIN_BUTTON) == LOW) == cfg::BUTTON_ACTIVE_LOW; }
 bool readClosed() { return (digitalRead(cfg::PIN_DOOR_SENSOR) == LOW) == cfg::DOOR_SENSOR_ACTIVE_LOW; }
-bool readNight() { return (digitalRead(cfg::PIN_LDR) == HIGH) == cfg::LDR_HIGH_IS_NIGHT; }
 
 // Changes the door state and logs it with its reason (unless `log` is false: the caller logs it).
 void setDoor(Door d, uint32_t timer, Reason why, bool log = true) {
@@ -92,6 +99,7 @@ void setDoor(Door d, uint32_t timer, Reason why, bool log = true) {
 
 void setLight(bool on, uint32_t ticks, Source src) {
   digitalWrite(cfg::PIN_RELAY_LIGHT, on ? HIGH : LOW);
+  if (s.light && !on) s.lightOffAt = s.ticks;
   s.light = on;
   s.lightTimed = on && ticks > 0;
   s.lightTicks = on ? ticks : 0;
@@ -102,7 +110,7 @@ void setLight(bool on, uint32_t ticks, Source src) {
 void autoLight() {
   if (!cfg::AUTO_LIGHT || !s.night.state) return;
   if (s.light && !s.lightTimed) return;  // manually held on: leave it
-  const uint32_t t = cfg::LIGHT_DEFAULT_S * TICK_HZ;
+  const uint32_t t = s.lightDefTicks;
   setLight(true, s.lightTicks > t ? s.lightTicks : t, Source::Auto);
 }
 
@@ -176,6 +184,24 @@ void stepDoor() {
   }
 }
 
+// Night with hysteresis: from the night level up; back to day only below it minus NIGHT_HYSTERESIS.
+void decideNight(bool fresh) {
+  const uint16_t dayBelow = nightLevel > cfg::NIGHT_HYSTERESIS ? nightLevel - cfg::NIGHT_HYSTERESIS : 0;
+  if (lightLevel >= nightLevel) rawNight = true;
+  else if (fresh || lightLevel < dayBelow) rawNight = false;
+}
+
+// Light level from the sensor's analog output. Main loop only: analogRead is too slow for the 100 Hz interrupt.
+void sampleLightLevel(bool now) {
+  static uint32_t last = 0;
+  if (!now && millis() - last < cfg::LIGHT_SAMPLE_MS) return;
+  last = millis();
+  uint32_t sum = 0;
+  for (int i = 0; i < 8; ++i) sum += analogRead(cfg::PIN_LIGHT_LEVEL);
+  lightLevel = (uint16_t)(sum / 8);
+  decideNight(now);
+}
+
 #ifndef HOST_TEST
 FspTimer timer;
 void onTimer(timer_callback_args_t*) {
@@ -209,7 +235,10 @@ void tick() {
     ++s.rev;
     digitalWrite(LED_BUILTIN, s.closed.state ? LOW : HIGH);
   }
-  if (debounce(s.night, readNight(), ticksOf(cfg::DEBOUNCE_NIGHT_MS))) {
+  // The sensor sees our own lamp: while it is on, and a little after, night/day is left as it was.
+  if (s.light || s.ticks - s.lightOffAt < ticksOf(cfg::LAMP_SETTLE_MS)) {
+    s.night.count = 0;
+  } else if (debounce(s.night, rawNight, ticksOf(cfg::DEBOUNCE_NIGHT_MS))) {
     ++s.rev;
     record(s.night.state ? Event::Night : Event::Day);
   }
@@ -233,40 +262,28 @@ void begin() {
   digitalWrite(cfg::PIN_RELAY_DOOR, LOW);
   pinMode(cfg::PIN_BUTTON, cfg::BUTTON_ACTIVE_LOW ? INPUT_PULLUP : INPUT);
   pinMode(cfg::PIN_DOOR_SENSOR, cfg::DOOR_SENSOR_ACTIVE_LOW ? INPUT_PULLUP : INPUT);
-  pinMode(cfg::PIN_LDR, INPUT);
 
   s = Core{};
   s.openTicks = ticksOf(cfg::DOOR_TRAVEL_MS);
   s.closeTicks = ticksOf(cfg::DOOR_CLOSE_TIMEOUT_MS);
+  s.lightDefTicks = cfg::LIGHT_DEFAULT_S * TICK_HZ;
+  s.lightOffAt = 0;
+  sampleLightLevel(true);
   s.button.state = readButton();  // a button held at boot does not trigger
   s.closed.state = readClosed();
-  s.night.state = readNight();
+  s.night.state = rawNight;
   s.door = s.closed.state ? Door::Closed : Door::Open;
   digitalWrite(LED_BUILTIN, s.closed.state ? LOW : HIGH);
   logHead = logCount = 0;
   record(Event::Boot);
-  s.doorSource = Source::Sensor;
+  s.doorSource = Source::None;  // unknown after a restart: nobody moved it, the state was read from the sensor
   record(doorEvent(s.door), Source::Sensor, Reason::Startup);
 
   timerRunning = startTimer();
 }
 
-// Light level from the sensor's analog output. Main loop only: analogRead is too slow for the 100 Hz interrupt.
-static uint16_t lightLevel = 0;
-
-static void sampleLightLevel() {
-  static uint32_t last = 0;
-  static bool first = true;
-  if (!first && millis() - last < cfg::LIGHT_SAMPLE_MS) return;
-  first = false;
-  last = millis();
-  uint32_t sum = 0;
-  for (int i = 0; i < 8; ++i) sum += analogRead(cfg::PIN_LIGHT_LEVEL);
-  lightLevel = (uint16_t)(sum / 8);
-}
-
 void loop() {
-  sampleLightLevel();
+  sampleLightLevel(false);
   if (timerRunning) return;
   // Fallback when no hardware timer could be allocated.
   static uint32_t last = millis();
@@ -303,11 +320,30 @@ void testSkipTicks(uint64_t n) { s.ticks += n; }
 
 bool timerActive() { return timerRunning; }
 
-void setTimings(uint32_t openS, uint32_t closeS) {
+void configure(const Config& c) {
   Lock l;
-  s.openTicks = openS * TICK_HZ;
-  s.closeTicks = closeS * TICK_HZ;
+  s.openTicks = c.openS * TICK_HZ;
+  s.closeTicks = c.closeS * TICK_HZ;
+  s.lightDefTicks = c.lightS * TICK_HZ;
+  nightLevel = c.nightLevel;
+  decideNight(true);
+  if (!s.nightSet) {  // at boot: decided from the stored level at once, not 60 s later
+    s.night.state = rawNight;
+    s.nightSet = true;
+  }
 }
+
+uint32_t lightDefaultS() {
+  Lock l;
+  return s.lightDefTicks / TICK_HZ;
+}
+
+#ifdef HOST_TEST
+void testLightLevel(uint16_t level) {
+  lightLevel = level;
+  decideNight(false);
+}
+#endif
 
 uint32_t rev() {
   Lock l;
@@ -373,7 +409,7 @@ Cmd lightOff() {
 void lightToggle() {
   Lock l;
   if (s.light) setLight(false, 0, Source::Api);
-  else setLight(true, cfg::LIGHT_DEFAULT_S * TICK_HZ, Source::Api);
+  else setLight(true, s.lightDefTicks, Source::Api);
 }
 
 const char* name(Door d) {

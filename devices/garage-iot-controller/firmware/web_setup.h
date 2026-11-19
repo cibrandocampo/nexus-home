@@ -48,9 +48,9 @@ button:disabled{opacity:.4;cursor:default}
 <div class="hint">Needed to use the buttons on the web page and the API. Write it down: the normal page never shows it.</div>
 </section>
 <section><h2>Door timings</h2>
-<label for="open">Opening time (seconds)</label><input id="open" type="number" min="5" max="120" required>
+<label for="open">Opening time (seconds)</label><input id="open" type="number" min="5" max="100" required>
 <div class="hint">How long the door takes to open fully, plus a small margin.</div>
-<label for="close">Close confirmation (seconds)</label><input id="close" type="number" min="10" max="180" required>
+<label for="close">Close confirmation (seconds)</label><input id="close" type="number" min="10" max="100" required>
 <div class="hint">If the closed sensor has not confirmed a close in this time, an alert is raised. Allow for slow closes.</div>
 </section>
 <button class="p" id="save">Save</button>

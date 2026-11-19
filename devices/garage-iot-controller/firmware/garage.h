@@ -50,7 +50,7 @@ struct State {
   bool     lightTimed;
   uint32_t lightRemainingS;
   bool     night;
-  uint16_t lightLevel;        // raw analog light sensor reading, 0-1023 (meaning depends on the module)
+  uint16_t lightLevel;        // light sensor analog output, 0-1023, higher = darker
   bool     button;
 };
 
@@ -60,9 +60,16 @@ void  tick();                 // one 10 ms step (public for host tests)
 State state();
 uint32_t rev();
 bool  timerActive();           // false: no hardware timer, the logic runs from the main loop
-void  setTimings(uint32_t openS, uint32_t closeS);  // door timings; apply from the next movement
+struct Config {                // from the stored settings
+  uint32_t openS, closeS;      // door timings; apply from the next movement
+  uint32_t lightS;             // light timer for the auto light and the API without a duration
+  uint16_t nightLevel;         // light level from which it is night
+};
+void  configure(const Config& c);
+uint32_t lightDefaultS();
 #ifdef HOST_TEST
 void testSkipTicks(uint64_t n);  // jumps the clock forward without running the logic
+void testLightLevel(uint16_t level);  // as if the main loop had sampled this level
 #endif
 
 Cmd doorOpen(Source src = Source::Api);

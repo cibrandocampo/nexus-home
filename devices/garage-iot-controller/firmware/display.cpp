@@ -145,10 +145,14 @@ bool stepIp(uint32_t now) {
 
 }  // namespace
 
-void begin() {
-  pinMode(cfg::PIN_DISPLAY_ENABLE, INPUT_PULLUP);
-  matrix.begin();
+namespace {
+bool isOn = true;  // until the settings are loaded
 }
+
+void begin() { matrix.begin(); }
+
+void setEnabled(bool on) { isOn = on; }
+bool enabled() { return isOn; }
 
 void loop() {
   const uint32_t now = millis();
@@ -157,7 +161,7 @@ void loop() {
 
   uint32_t f[3] = {0, 0, 0};
   const bool ipScreen = stepIp(now);
-  if (digitalRead(cfg::PIN_DISPLAY_ENABLE) != LOW) {
+  if (isOn) {
     if (ipScreen) drawNumber(f, queueLen == 1 ? queue[0] : queue[queuePos]);
     else drawStatus(f, now);
   }

@@ -10,11 +10,10 @@ one-to-one onto Home Assistant entities.
 |-----|------|----------|
 | 2 | OUTPUT | Light relay (HIGH = on) |
 | 3 | OUTPUT | Door opener relay (400 ms HIGH pulse) |
-| 6 | INPUT_PULLUP | LED matrix enable (tie to GND to switch the matrix off) |
 | 7 | INPUT_PULLUP | Setup jumper: tied to GND at boot = setup mode (see "First setup") |
 | 9 | INPUT_PULLUP | Push button, wired between the pin and GND (LOW = pressed) |
 | 11 | INPUT_PULLUP | Door sensor, contact between the pin and GND (LOW = closed) |
-| 12 | INPUT | Digital light sensor (HIGH = night) |
+| A0 | analog | Light sensor level (AO of the LDR module, 0-1023, higher = darker) |
 | LED_BUILTIN | OUTPUT | On while the door is not closed |
 
 ### Wiring
@@ -28,7 +27,7 @@ one-to-one onto Home Assistant entities.
  pin 11 ------------------+------ door contact ----- GND     door closed = LOW
         (one resistor per pin)
 
- pin 12 <----- DO of the LDR module (module powered from 5V and GND)     night = HIGH
+ A0     <----- AO of the LDR module (module powered from 5V and GND)     higher = darker
  pin 2  -----> light relay                                   on = HIGH
  pin 3  -----> door opener relay                             400 ms HIGH pulse
  pin 2, pin 3 ---[10k]--- GND                                recommended, see below
@@ -45,8 +44,9 @@ one-to-one onto Home Assistant entities.
   On the bench pin 3 read 0 V at power-on and rose to 0.2 V during a network update (no pulse), far below
   what a relay input needs. In the installation, with long cables near the motor, add a **10 kΩ resistor from
   each relay pin to GND** so a floating pin cannot pick up noise, unless the relay module already has one.
-- **Light sensor (pin 12)** is driven by a standard LDR module with a digital output, so it needs no
-  pull resistor. `LDR_HIGH_IS_NIGHT` in `config.h` inverts it.
+- **Light sensor (A0)** is the analog output (AO) of a standard LDR module. Night is decided by the board
+  from the level and a threshold set on the web page, so the module's potentiometer and its digital output
+  (DO) are not used since 2.0.3. With A0 left open the reading floats (around 200 on the bench board).
 
 Coming from the previous wiring (contacts to 5V with pull-downs to GND): move the second wire of each
 contact from 5V to GND, and move the pull-down resistors to 5V or remove them. To keep the previous
@@ -58,8 +58,7 @@ wiring instead, set `BUTTON_ACTIVE_LOW` and `DOOR_SENSOR_ACTIVE_LOW` to `false` 
 |-----|------|--------|
 | 9 | leave open | touch to GND = button pressed |
 | 11 | leave open = door not closed | jumper to GND = door closed |
-| 12 | jumper to GND = day (it floats if left open) | jumper to 5V = night |
-| 6 | leave open = LED matrix on | jumper to GND = LED matrix off |
+| A0 | jumper to GND = 0, bright (it floats if left open) | jumper to 5V = 1023, dark |
 
 Pins 2 and 3 are outputs: measure them (multimeter, or an LED with a resistor to GND), never tie them
 to 5V or GND.
@@ -87,8 +86,13 @@ pulse. Stopping a close on purpose is not a failure. The remote control is wired
 its closes are watched too. Only a door moved without the board (by hand) cannot be watched.
 Pulses are at least `DOOR_PULSE_GAP_MS` (1.2 s) apart.
 
-**Light.** Turns on for `LIGHT_DEFAULT_S` (120 s) when the door starts opening at night,
+**Light.** Turns on for the light time (setting, 120 s by default) when the door starts opening at night,
 whatever opened it. It can also be switched from the web or the API, with a timer or without one.
+
+**Night.** From the light level on A0 (sampled once per second): night from the night level (setting, 700 by
+default) up, back to day only below that level minus 30 (`NIGHT_HYSTERESIS`), so a level near the threshold
+does not flip it. A change must hold for 60 s (`DEBOUNCE_NIGHT_MS`). The sensor sees the garage light, so it
+is not read while the light is on and for 10 s after (`LAMP_SETTLE_MS`).
 
 **Button.** A press sends one pulse to the opener, exactly like the opener's own button.
 
@@ -149,11 +153,18 @@ In setup mode only the setup page and `/info` work.
 | Name | `Garage` | shown on the page, in `/info` and in Home Assistant |
 | WiFi network and password | empty | empty network = no WiFi |
 | Access token | empty | required for commands, settings and restart (8 to 64 characters, no spaces) |
-| Opening time | 20 s (`DOOR_TRAVEL_MS`) | 5 to 120 s |
-| Close confirmation | 40 s (`DOOR_CLOSE_TIMEOUT_MS`) | 10 to 180 s |
+| Opening time | 20 s (`DOOR_TRAVEL_MS`) | 5 to 100 s |
+| Close confirmation | 40 s (`DOOR_CLOSE_TIMEOUT_MS`) | 10 to 100 s |
+| Light time | 120 s (`LIGHT_DEFAULT_S`) | 10 to 600 s (10 min); auto light, and `/light/on` or `/light/toggle` without a duration |
+| Night level | 700 (`NIGHT_LEVEL_DEFAULT`) | 1 to 1023; the web page shows the current level and can copy it |
+| LED matrix | on | switched from the Status block of the web page (`display` in `/settings`); replaces the pin 6 jumper used up to 2.0.2 |
 
 - Two copies are kept in two flash blocks, each with a CRC; a save writes the older one. A power cut during a
   save keeps the previous settings. They survive firmware uploads over USB (checked on the bench board).
+- Settings saved by 2.0.0-2.0.2 (older format) are read after updating to 2.0.3, with the new fields at their
+  defaults (checked on the bench board); the next save writes the new format.
+- The web page shows the timings and the night level as sliders with these ranges. A stored value outside a
+  range (2.0.0-2.0.2 allowed up to 120 s opening and 180 s close) is brought into range when loaded.
 - After a normal start the settings can be changed from the web page (see below). New timings apply from the
   next door movement.
 - **Changing the WiFi network from the web page:** the board tries the new network first and saves it only once
@@ -189,7 +200,7 @@ Base path `/api/v1`. All answers are JSON.
 | POST | `/light/off` | Light off |
 | POST | `/light/toggle` | Toggle the light |
 | GET | `/settings` | Stored settings, without the WiFi password or the token (token required) |
-| POST | `/settings` | Change settings: JSON body with any of `name`, `open_s`, `close_s`, `token`, `wifi_ssid`, `wifi_password` |
+| POST | `/settings` | Change settings: JSON body with any of `name`, `open_s`, `close_s`, `light_s`, `night_level`, `display` (true/false), `token`, `wifi_ssid`, `wifi_password` |
 | POST | `/restart` | Restart the board; 409 `door_busy` while the door moves |
 | POST | `/setup` | Setup mode only, no token: save all settings from the setup page |
 | POST | `/firmware` | Network update: JSON body `{"url": "http://...ota"}` (see "Firmware update over the network") |
@@ -207,15 +218,16 @@ Base path `/api/v1`. All answers are JSON.
   "night": false,
   "light_level": 512,
   "button": false,
+  "display": true,
   "wifi": {"ip": "192.168.1.190", "rssi": -58}
 }
 ```
 
 - `door.state`: `closed`, `opening`, `open` or `closing`.
 - `door.close_failed`: `true` when the last close was not confirmed by the sensor (see Behaviour).
-- `door.last_source`: `button` (push button or remote control, both wired to pin 9), `api`, `sensor` (change detected by the closed sensor without a pulse from this board; the cause is unknown) or `none`.
-- `light_level`: raw reading (0-1023) of the light sensor's analog output (AO, pin A0), averaged once per second.
-  Only measured for now: `night` still comes from the digital output (DO). It does not change `rev`.
+- `door.last_source`: `button` (push button or remote control, both wired to pin 9), `api`, `sensor` (change detected by the closed sensor without a pulse from this board: by hand or another remote) or `none` (nothing since the last restart). The web page shows it under the door state.
+- `light_level`: light sensor reading (AO, pin A0), 0-1023, higher = darker, averaged once per second.
+  `night` is decided from it (see Behaviour). It does not change `rev`.
 - `rev` increases on every change, so a client can skip unchanged polls.
 
 ### Event log
@@ -307,6 +319,7 @@ network changes: the board then drops the connection to try the new network.
 | Light | `light` | `light.state` (`on`/`off`) | `turn_on` → `/light/on?duration=0`, `turn_off` → `/light/off` |
 | Door problem | `binary_sensor` (`device_class: problem`) | `door.close_failed` | |
 | Night | `binary_sensor` | `night` | |
+| Light level | `sensor` (raw, higher = darker) | `light_level` | |
 | Signal | `sensor` (`signal_strength`, dBm) | `wifi.rssi` | |
 
 `GET /info` returns the device id, name, model, firmware version, WiFi module firmware

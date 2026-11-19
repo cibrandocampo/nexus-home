@@ -29,11 +29,10 @@ Wiring on the bare board:
 | 9 | Button | leave open | touch to **GND** = pressed |
 | 11 | Door sensor | leave open = not closed | jumper to **GND** = door closed |
 | 12 | Light sensor | jumper to GND = day (it floats if left open) | jumper to **5V** = night |
-| 6 | LED matrix | leave open = on | jumper to GND = matrix off |
 
 Pins 2 (light relay) and 3 (door relay) are outputs: measure them, never jumper them to 5V or GND.
 
-Start with pin 11 to GND and pin 12 to GND (door closed, day). Follow along with
+Start with pin 11 to GND and A0 to GND (door closed, day). Follow along with
 `curl http://<ip>/api/v1/log` or the "Recent activity" list on the web page.
 
 | Check | Action | Expected |
@@ -49,7 +48,7 @@ Start with pin 11 to GND and pin 12 to GND (door closed, day). Follow along with
 | Moved without the board | remove the jumper from pin 11 without pressing | `opening`, source `sensor` |
 | Stop | press while moving (more than 1.2 s after the last pulse) | stops: `open` or `closed` by the sensor |
 | Busy | `door/open` then `door/close` right away, over the API | 409 `door_busy` |
-| Auto light | pin 12 to 5V, wait 2 s, open | light on for 120 s, source `auto` |
+| Auto light | A0 to 5V, wait 70 s, open | light on for 120 s, source `auto` |
 | Held at boot | hold pin 9 on GND and press reset | no relay pulse |
 | Reset reason | press the reset button | "Last restart: reset button" on the web (`reset_reason: pin`) |
 | LED matrix | look at the board | letters `N` `C` `B` and bars as described in README |

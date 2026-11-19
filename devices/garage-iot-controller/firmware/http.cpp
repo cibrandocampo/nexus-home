@@ -1,5 +1,6 @@
 #include "http.h"
 #include "config.h"
+#include "display.h"
 #include "garage.h"
 #include "fwupdate.h"
 #include "json.h"
@@ -100,11 +101,11 @@ size_t stateJson(char* out, size_t n) {
                   "{\"rev\":%lu,\"uptime_s\":%lu,"
                   "\"door\":{\"state\":\"%s\",\"moving\":%s,\"sensor_closed\":%s,\"close_failed\":%s,\"since_s\":%lu,\"last_source\":\"%s\"},"
                   "\"light\":{\"state\":\"%s\",\"timed\":%s,\"remaining_s\":%lu},"
-                  "\"night\":%s,\"light_level\":%u,\"button\":%s,"
+                  "\"night\":%s,\"light_level\":%u,\"button\":%s,\"display\":%s,"
                   "\"wifi\":{\"ip\":\"%s\",\"rssi\":%d}}",
                   (unsigned long)s.rev, (unsigned long)s.uptimeS, garage::name(s.door), b(moving), b(s.sensorClosed), b(s.closeFailed),
                   (unsigned long)s.doorSinceS, garage::name(s.doorSource), s.light ? "on" : "off", b(s.lightTimed),
-                  (unsigned long)s.lightRemainingS, b(s.night), (unsigned)s.lightLevel, b(s.button), net::ip(), net::rssi());
+                  (unsigned long)s.lightRemainingS, b(s.night), (unsigned)s.lightLevel, b(s.button), b(display::enabled()), net::ip(), net::rssi());
 }
 
 void respondState() { respondJson(200, stateJson(body, sizeof body)); }
@@ -153,6 +154,7 @@ void respondInfo() {
                             "{\"id\":\"door_problem\",\"type\":\"binary_sensor\",\"device_class\":\"problem\","
                             "\"state\":\"door.close_failed\"},"
                             "{\"id\":\"night\",\"type\":\"binary_sensor\",\"state\":\"night\"},"
+                            "{\"id\":\"light_level\",\"type\":\"sensor\",\"state\":\"light_level\"},"
                             "{\"id\":\"rssi\",\"type\":\"sensor\",\"device_class\":\"signal_strength\","
                             "\"unit\":\"dBm\",\"state\":\"wifi.rssi\"}]}",
                             net::deviceId(), name, modeName(), FW_VERSION, net::modemVersion(), watchdog::resetReason(), net::mac(),
@@ -225,7 +227,7 @@ void handleCommand(const char* path, const char* query, const char* payload) {
   if (!strcmp(path, "door/stop")) return respondCmd(garage::doorStop());
   if (!strcmp(path, "door/toggle")) return respondCmd(garage::doorToggle());
   if (!strcmp(path, "light/on")) {
-    uint32_t seconds = cfg::LIGHT_DEFAULT_S;
+    uint32_t seconds = garage::lightDefaultS();
     if (!findDuration(query, payload, seconds)) return respondError(400, "invalid_duration", "duration must be 0..86400 seconds");
     return respondCmd(garage::lightOn(seconds));
   }
@@ -244,9 +246,10 @@ size_t settingsJson(char* out, size_t n) {
   esc(token, sizeof token, net::mode() == net::Mode::Setup ? d.token : "");
   return snprintf(out, n,
                   "{\"name\":\"%s\",\"wifi_ssid\":\"%s\",\"wifi_password_set\":%s,\"token_set\":%s,%s%s%s"
-                  "\"open_s\":%u,\"close_s\":%u,\"stored\":%s,\"wifi_trying\":%s}",
+                  "\"open_s\":%u,\"close_s\":%u,\"light_s\":%u,\"night_level\":%u,\"display\":%s,\"stored\":%s,\"wifi_trying\":%s}",
                   name, ssid, b(d.password[0] != 0), b(d.token[0] != 0), token[0] ? "\"token\":\"" : "", token,
-                  token[0] ? "\"," : "", d.openS, d.closeS, b(settings::stored()), b(net::trying() || networkAfter));
+                  token[0] ? "\"," : "", d.openS, d.closeS, d.lightS, d.nightLevel, b(d.display), b(settings::stored()),
+                  b(net::trying() || networkAfter));
 }
 
 void respondSettings(const char* result) {
@@ -263,8 +266,11 @@ const char* errorMessage(const char* code) {
   if (!strcmp(code, "invalid_ssid")) return "WiFi network must not be empty";
   if (!strcmp(code, "invalid_password")) return "WiFi password must be empty or at least 8 characters";
   if (!strcmp(code, "invalid_token")) return "Token must be 8 to 64 characters, no spaces";
-  if (!strcmp(code, "invalid_open_time")) return "Opening time must be 5 to 120 seconds";
-  if (!strcmp(code, "invalid_close_time")) return "Close confirmation time must be 10 to 180 seconds";
+  if (!strcmp(code, "invalid_open_time")) return "Opening time must be 5 to 100 seconds";
+  if (!strcmp(code, "invalid_close_time")) return "Close confirmation time must be 10 to 100 seconds";
+  if (!strcmp(code, "invalid_light_time")) return "Light time must be 10 to 600 seconds";
+  if (!strcmp(code, "invalid_night_level")) return "Night level must be 1 to 1023";
+  if (!strcmp(code, "invalid_display")) return "display must be true or false";
   if (!strcmp(code, "invalid_json")) return "Malformed field in the request body";
   return "Invalid settings";
 }
@@ -283,6 +289,13 @@ const char* applyFields(const char* payload, settings::Data& d, bool& wifiChange
   if (r == json::Ok) d.openS = (uint16_t)v;
   if ((r = json::num(payload, "close_s", v)) == json::Invalid || (r == json::Ok && v > 0xFFFF)) return "invalid_close_time";
   if (r == json::Ok) d.closeS = (uint16_t)v;
+  if ((r = json::num(payload, "light_s", v)) == json::Invalid || (r == json::Ok && v > 0xFFFF)) return "invalid_light_time";
+  if (r == json::Ok) d.lightS = (uint16_t)v;
+  if ((r = json::num(payload, "night_level", v)) == json::Invalid || (r == json::Ok && v > 0xFFFF)) return "invalid_night_level";
+  if (r == json::Ok) d.nightLevel = (uint16_t)v;
+  bool on;
+  if ((r = json::flag(payload, "display", on)) == json::Invalid) return "invalid_display";
+  if (r == json::Ok) d.display = on ? 1 : 0;
   char ssid[sizeof d.ssid], pass[sizeof d.password];
   const json::Result rs = json::str(payload, "wifi_ssid", ssid, sizeof ssid);
   const json::Result rp = json::str(payload, "wifi_password", pass, sizeof pass);
@@ -314,13 +327,15 @@ void handleSettings(const char* payload) {
   strcpy(keep.ssid, old.ssid);
   strcpy(keep.password, old.password);
   const bool changed = strcmp(keep.name, old.name) || strcmp(keep.token, old.token) || keep.openS != old.openS ||
-                      keep.closeS != old.closeS;  // field by field: bytes after a string's end may differ
+                      keep.closeS != old.closeS || keep.lightS != old.lightS ||
+                      keep.nightLevel != old.nightLevel || keep.display != old.display;  // field by field: bytes after a string's end may differ
   if (changed) {
     if (!settings::save(keep)) {
       garage::note(garage::Event::SettingsSaveFailed, garage::Source::Api);
       return respondError(500, "save_failed", "Could not write the settings to flash");
     }
-    garage::setTimings(keep.openS, keep.closeS);
+    garage::configure({keep.openS, keep.closeS, keep.lightS, keep.nightLevel});
+    display::setEnabled(keep.display);
     garage::note(garage::Event::SettingsChanged, garage::Source::Api);
   }
   if (wifiChanged) {
@@ -342,7 +357,8 @@ void handleSetup(const char* payload) {
   if (!err) err = settings::validate(d);
   if (err) return respondInvalid(err);
   if (!settings::save(d)) return respondError(500, "save_failed", "Could not write the settings to flash");
-  garage::setTimings(d.openS, d.closeS);
+  garage::configure({d.openS, d.closeS, d.lightS, d.nightLevel});
+  display::setEnabled(d.display);
   garage::note(garage::Event::SettingsChanged);
   respondSettings("ok");
 }

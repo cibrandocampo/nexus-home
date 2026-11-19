@@ -6,5 +6,7 @@ namespace display {
 
 void begin();
 void loop();
+void setEnabled(bool on);  // LED matrix on or off (setting, from the web page)
+bool enabled();
 
 }  // namespace display
