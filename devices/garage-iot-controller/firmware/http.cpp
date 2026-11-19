@@ -100,11 +100,11 @@ size_t stateJson(char* out, size_t n) {
                   "{\"rev\":%lu,\"uptime_s\":%lu,"
                   "\"door\":{\"state\":\"%s\",\"moving\":%s,\"sensor_closed\":%s,\"close_failed\":%s,\"since_s\":%lu,\"last_source\":\"%s\"},"
                   "\"light\":{\"state\":\"%s\",\"timed\":%s,\"remaining_s\":%lu},"
-                  "\"night\":%s,\"button\":%s,"
+                  "\"night\":%s,\"light_level\":%u,\"button\":%s,"
                   "\"wifi\":{\"ip\":\"%s\",\"rssi\":%d}}",
                   (unsigned long)s.rev, (unsigned long)s.uptimeS, garage::name(s.door), b(moving), b(s.sensorClosed), b(s.closeFailed),
                   (unsigned long)s.doorSinceS, garage::name(s.doorSource), s.light ? "on" : "off", b(s.lightTimed),
-                  (unsigned long)s.lightRemainingS, b(s.night), b(s.button), net::ip(), net::rssi());
+                  (unsigned long)s.lightRemainingS, b(s.night), (unsigned)s.lightLevel, b(s.button), net::ip(), net::rssi());
 }
 
 void respondState() { respondJson(200, stateJson(body, sizeof body)); }

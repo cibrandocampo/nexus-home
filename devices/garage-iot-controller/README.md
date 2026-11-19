@@ -205,6 +205,7 @@ Base path `/api/v1`. All answers are JSON.
   "door": {"state": "closed", "moving": false, "sensor_closed": true, "close_failed": false, "since_s": 3600, "last_source": "api"},
   "light": {"state": "off", "timed": false, "remaining_s": 0},
   "night": false,
+  "light_level": 512,
   "button": false,
   "wifi": {"ip": "192.168.1.190", "rssi": -58}
 }
@@ -213,6 +214,8 @@ Base path `/api/v1`. All answers are JSON.
 - `door.state`: `closed`, `opening`, `open` or `closing`.
 - `door.close_failed`: `true` when the last close was not confirmed by the sensor (see Behaviour).
 - `door.last_source`: `button` (push button or remote control, both wired to pin 9), `api`, `sensor` (change detected by the closed sensor without a pulse from this board; the cause is unknown) or `none`.
+- `light_level`: raw reading (0-1023) of the light sensor's analog output (AO, pin A0), averaged once per second.
+  Only measured for now: `night` still comes from the digital output (DO). It does not change `rev`.
 - `rev` increases on every change, so a client can skip unchanged polls.
 
 ### Event log

@@ -146,7 +146,10 @@ void stepDoor() {
       if (!closed) startOpening(Source::Sensor, Reason::SensorReleased);  // not started by this board
       break;
     case Door::Opening:
-      if (!closed) {
+      // The sensor bounces while the door starts to move: it is ignored for DOOR_SETTLE_MS.
+      if (s.ticks - s.doorSince < ticksOf(cfg::DOOR_SETTLE_MS)) {
+        // settling
+      } else if (!closed) {
         s.leftClosed = true;
       } else if (s.leftClosed) {
         setDoor(Door::Closed, 0, Reason::CameBack);  // came back down
@@ -248,7 +251,22 @@ void begin() {
   timerRunning = startTimer();
 }
 
+// Light level from the sensor's analog output. Main loop only: analogRead is too slow for the 100 Hz interrupt.
+static uint16_t lightLevel = 0;
+
+static void sampleLightLevel() {
+  static uint32_t last = 0;
+  static bool first = true;
+  if (!first && millis() - last < cfg::LIGHT_SAMPLE_MS) return;
+  first = false;
+  last = millis();
+  uint32_t sum = 0;
+  for (int i = 0; i < 8; ++i) sum += analogRead(cfg::PIN_LIGHT_LEVEL);
+  lightLevel = (uint16_t)(sum / 8);
+}
+
 void loop() {
+  sampleLightLevel();
   if (timerRunning) return;
   // Fallback when no hardware timer could be allocated.
   static uint32_t last = millis();
@@ -274,6 +292,7 @@ State state() {
   o.lightTimed = s.lightTimed;
   o.lightRemainingS = (s.lightTicks + TICK_HZ - 1) / TICK_HZ;
   o.night = s.night.state;
+  o.lightLevel = lightLevel;
   o.button = s.button.state;
   return o;
 }

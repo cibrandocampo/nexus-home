@@ -217,6 +217,7 @@ int main() {
   sensor(false);
   run(200);
   CHECK(lastIs(Event::DoorOpening, Source::Sensor, Reason::SensorReleased));
+  run(cfg::DOOR_SETTLE_MS);
   sensor(true);
   run(200);
   CHECK(lastIs(Event::DoorClosed, Source::Sensor, Reason::CameBack));
@@ -233,6 +234,20 @@ int main() {
         ev[1].event == Event::DoorClosing);  // close_failed replaces door_open
   CHECK(lightOn(0) == Cmd::Ok);
   CHECK(recent(ev, 1) == 1 && ev[0].event == Event::LightOn && ev[0].source == Source::Api && ev[0].value == 0);
+
+  // The closed sensor bouncing when the door starts to move (real door, 2026-11-19) is not a "came back".
+  boot(true, true);
+  press();
+  sensor(false); run(300); sensor(true); run(300); sensor(false);  // bounce, then really open
+  run(cfg::DOOR_TRAVEL_MS);
+  CHECK(lastIs(Event::DoorOpen, Source::Button, Reason::TravelEnd));
+  CHECK(recent(ev, 3) == 3 && ev[1].event == Event::LightOn && ev[2].event == Event::DoorOpening);  // one light_on
+  // A bounce that ends closed (door did not move): closed when the travel time ends, not "came back".
+  boot(true, false);
+  press();
+  sensor(false); run(300); sensor(true);
+  run(cfg::DOOR_TRAVEL_MS);
+  CHECK(lastIs(Event::DoorClosed, Source::Button, Reason::NoMovement));
 
   // Uptime keeps counting past 2^32 ticks (497 days): times and ages stay right.
   boot(true, false);

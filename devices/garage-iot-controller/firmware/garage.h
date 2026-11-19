@@ -50,6 +50,7 @@ struct State {
   bool     lightTimed;
   uint32_t lightRemainingS;
   bool     night;
+  uint16_t lightLevel;        // raw analog light sensor reading, 0-1023 (meaning depends on the module)
   bool     button;
 };
 
