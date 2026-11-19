@@ -17,6 +17,10 @@ struct Input {
   uint16_t count;
 };
 
+// Direction the door was moving when a pulse stopped it. The opener reverses on the next pulse:
+// stopped while opening -> it closes; stopped while closing -> it opens (checked on the real door, 2026-11-19).
+enum class Dir : uint8_t { None, Up, Down };
+
 struct Core {
   uint64_t ticks;       // 64-bit: a 32-bit count would wrap after 497 days
   uint32_t rev;
@@ -29,6 +33,9 @@ struct Core {
   bool     closeFailed; // last close not confirmed by the sensor; cleared by closing or a new pulse
   uint16_t pulseTicks;  // relay pulse remaining
   uint16_t gapTicks;    // until the next pulse is allowed
+  Dir      stopped;     // door stopped part way by a pulse, and in which direction it was going
+  uint8_t  queued;      // pulses still to send for an open/close that must reverse first
+  Source   queuedSrc;
   bool     light;
   bool     lightTimed;
   uint32_t lightTicks;
@@ -89,6 +96,7 @@ bool readClosed() { return (digitalRead(cfg::PIN_DOOR_SENSOR) == LOW) == cfg::DO
 // Changes the door state and logs it with its reason (unless `log` is false: the caller logs it).
 void setDoor(Door d, uint32_t timer, Reason why, bool log = true) {
   s.doorTimer = timer;
+  if (why != Reason::Stopped) s.stopped = Dir::None;  // any other change: the door is not stopped part way
   if (s.door == d) return;
   s.door = d;
   s.doorSince = s.ticks;
@@ -135,14 +143,21 @@ bool pulse(Source src) {
       startOpening(src, Reason::Command);
       break;
     case Door::Open:
+      if (s.stopped == Dir::Down) {  // stopped while closing: the opener now opens
+        startOpening(src, Reason::Command);
+        break;
+      }
       s.doorSource = src;
       setDoor(Door::Closing, s.closeTicks, Reason::Command);
       break;
     case Door::Opening:
-    case Door::Closing:  // a pulse while moving stops the door
+    case Door::Closing: {  // a pulse while moving stops the door
+      const Dir was = s.door == Door::Opening ? Dir::Up : Dir::Down;
       s.doorSource = src;
       setDoor(s.closed.state ? Door::Closed : Door::Open, 0, Reason::Stopped);
+      s.stopped = s.door == Door::Open ? was : Dir::None;
       break;
+    }
   }
   return true;
 }
@@ -229,6 +244,7 @@ void tick() {
   if (debounce(s.button, readButton(), ticksOf(cfg::DEBOUNCE_BUTTON_MS))) {
     ++s.rev;
     // A press that fires the relay is logged by the door event it causes; only a refused one is logged here.
+    if (s.button.state) s.queued = 0;  // a press cancels a reversing open/close in progress
     if (s.button.state && !pulse(Source::Button)) record(Event::ButtonIgnored, Source::Button, Reason::TooSoon);
   }
   if (debounce(s.closed, readClosed(), ticksOf(cfg::DEBOUNCE_DOOR_MS))) {
@@ -248,6 +264,10 @@ void tick() {
     ++s.rev;
   }
   if (s.gapTicks) --s.gapTicks;
+  if (s.queued && !s.pulseTicks && !s.gapTicks) {
+    --s.queued;
+    pulse(s.queuedSrc);
+  }
 
   stepDoor();
 
@@ -363,19 +383,31 @@ void note(Event e, Source src) {
   ++s.rev;
 }
 
+// Open or close when the next pulse would move the door the other way (stopped part way in the opposite
+// direction): three pulses, as a person would do it. The door goes the wrong way for ~1 s, stops, then goes.
+static Cmd reverseThen(Source src) {
+  if (s.queued || !pulse(src)) return Cmd::Busy;
+  s.queued = 2;
+  s.queuedSrc = src;
+  return Cmd::Ok;
+}
+
 Cmd doorOpen(Source src) {
   Lock l;
+  if (s.queued) return Cmd::Busy;
   switch (s.door) {
     case Door::Closed:  return pulse(src) ? Cmd::Ok : Cmd::Busy;
     case Door::Closing: return Cmd::Busy;
+    case Door::Open:    return s.stopped == Dir::Up ? reverseThen(src) : Cmd::Noop;  // part way: next pulse closes
     default:            return Cmd::Noop;
   }
 }
 
 Cmd doorClose(Source src) {
   Lock l;
+  if (s.queued) return Cmd::Busy;
   switch (s.door) {
-    case Door::Open:    return pulse(src) ? Cmd::Ok : Cmd::Busy;
+    case Door::Open:    return s.stopped == Dir::Down ? reverseThen(src) : (pulse(src) ? Cmd::Ok : Cmd::Busy);
     case Door::Opening: return Cmd::Busy;
     default:            return Cmd::Noop;
   }
@@ -383,12 +415,15 @@ Cmd doorClose(Source src) {
 
 Cmd doorStop(Source src) {
   Lock l;
-  if (s.door != Door::Opening && s.door != Door::Closing) return Cmd::Noop;
+  const bool cancelled = s.queued;
+  s.queued = 0;
+  if (s.door != Door::Opening && s.door != Door::Closing) return cancelled ? Cmd::Ok : Cmd::Noop;
   return pulse(src) ? Cmd::Ok : Cmd::Busy;
 }
 
 Cmd doorToggle(Source src) {
   Lock l;
+  s.queued = 0;
   return pulse(src) ? Cmd::Ok : Cmd::Busy;
 }
 

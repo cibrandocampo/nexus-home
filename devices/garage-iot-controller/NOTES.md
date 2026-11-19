@@ -17,11 +17,11 @@ Rewrite the garage controller from scratch (Arduino UNO R4 WiFi, door + light bu
 
 | What | Status |
 |------|--------|
-| New firmware in `firmware/` | Written. Builds for `arduino:renesas_uno:unor4wifi` (30 % flash, 47 % RAM) |
+| New firmware in `firmware/` | 2.0.4. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
 | Host test of the logic (`test/run.sh`) | **Passes** |
-| Test on the board | **Partly done** on the bench board (see "Board test results") |
-| Web page | Works in the browser, including the "Recent activity" list (reviewed 2026-11-17) |
-| Commit | Local branch `garage-v2` (2026-11-17), not pushed |
+| Garage board | In production since 2026-11-17 (`garage-3562d4`, 10.1.3.103, modem_fw 0.6.0, RSSI -77 to -83 dBm). Installation checks done on 2026-11-19, see below |
+| Web page | Works in the browser (reviewed 2026-11-19) |
+| Commit | Branch `garage-v2`, pushed; PR to `main` |
 | Old code (`src/`, Postman collection) | Deleted; recoverable from git |
 
 ## Blockers
@@ -66,6 +66,28 @@ Bench board: a new UNO R4 WiFi with nothing wired, not the one installed in the 
 - Seen with the old active-high inputs: with pins 9 and 11 floating the board missed and doubled button
   presses and saw phantom sensor changes. This is what led to the active-low change.
 - Pin 12 still floats on the bare board: tie it to GND or 5V while testing.
+
+## Garage installation (2026-11-17 to 2026-11-19)
+
+Wiring changed to active low (4.7 kΩ from each input to 5V, contacts to GND), measured, v2 uploaded over USB,
+then 2.0.1 to 2.0.4 over the network (`tools/update.sh`). Light sensor AO wired to A0 on 2026-11-19.
+Checks on the real door (the user and Claude through the API, 2026-11-19):
+
+| Check | Result |
+|-------|--------|
+| Push button | opens; logged as button |
+| Remote control | same as the button: both close the same contact |
+| Open and close from the web / API | work with the token; open 20 s, close confirmed by the sensor in 17 s |
+| Pulse while moving | stops the door; the next pulse goes the other way (see "Assumptions") |
+| Auto light at night | on when the door opens |
+| Closed sensor at opening start | bounces for under 1 s: ignored for 3 s since 2.0.2 (`DOOR_SETTLE_MS`) |
+| Light sensor DO (potentiometer) | badly set: "night" at midday, "day" at 982 at night. Replaced by AO + threshold in 2.0.3 |
+| Light level, 2026-11-19 evening | ~700 at dusk (user: "dark, the light is welcome"), ~980 at night with the door open, ~850 with it closed |
+
+**Going back to the old firmware** (branch `main`, `devices/garage-iot-controller/src/`): it expects the old
+wiring (contacts to 5V, 4.7 kΩ to GND, 10 kΩ in series on the sensor wire), and the real WiFi credentials in
+`src/wifi_manager.h` (not committed). Upload over USB with `arduino-cli compile/upload` on that folder. If only
+the firmware misbehaves, stay on v2 and fix it: the wiring is already the new one.
 
 ## Decisions
 
@@ -172,14 +194,16 @@ Bench board: a new UNO R4 WiFi with nothing wired, not the one installed in the 
 ## Assumptions to confirm
 
 - [x] **Door movement time:** 20 s, confirmed.
-- [ ] **A pulse while moving stops the door.** If the opener reverses instead, `stop` and the state machine must change.
+- [x] **A pulse while moving stops the door** (confirmed by the user and on the real door, 2026-11-19). The next
+      pulse goes the other way: stopped while closing, it opens. Before 2.0.4 the board showed "closing" and
+      raised a false close_failed after 40 s. 2.0.4 remembers the direction (see README, "Stopped part way").
 - [ ] **Default light duration through the API:** 120 s. For Home Assistant, no timer may be better.
 - [x] Input wiring in the real installation (per the user, from memory, "I think 4.7 kΩ"): pull-downs to
       GND on pins 9 and 11; pin 12 is the usual LDR circuit and stays active high. The old documentation
       (README at commit `1570509`) only mentions a 10 kΩ series resistor on the door sensor's 5V line,
       "to prevent board resets". The user is going to photograph the installation.
 - [x] The board on the USB cable is a bench board with nothing wired: door commands can be tested freely.
-- [ ] Modem firmware version of the board installed in the garage (read `modem_fw` from `/info`).
+- [x] Modem firmware version of the board installed in the garage: 0.6.0 (network updates need 0.5.0+).
 
 ## Interrupt analysis (checked against core 1.6.0 sources)
 
@@ -196,7 +220,8 @@ Bench board: a new UNO R4 WiFi with nothing wired, not the one installed in the 
 3. [x] Upload to the bench board and test web and API (`test/api_smoke.sh`).
 4. [ ] Finish the bench tests with jumpers: button, door sensor, door commands, LED matrix, WiFi loss
       (list in NEXT_SESSION.md).
-5. [ ] Rewire the real installation for the active-low inputs and confirm the assumptions (stop behaviour).
+5. [x] Rewire the real installation for the active-low inputs and confirm the assumptions (2026-11-19, see
+      "Garage installation").
 6. [x] **Watchdog** (2026-11-17): see "Watchdog" under Decisions. Tested on the bench board.
 7. [x] **Stored settings, WiFi setup mode and restart button** (2026-11-17): see [PLAN_SETTINGS.md](PLAN_SETTINGS.md).
    One binary for every door, with no secrets in it. Checked on the bench board: setup page from a phone, restart
@@ -207,7 +232,7 @@ Bench board: a new UNO R4 WiFi with nothing wired, not the one installed in the 
 8. [x] **OTA** (2026-11-17): `tools/update.sh` from a computer in the LAN, see "OTA: network updates" below.
 8b. [ ] **Update server**: small Docker container on the user's server (LAN, plain HTTP) serving the .ota files;
     later the Home Assistant gateway.
-9. [x] Commit on the branch `garage-v2` (2026-11-17). [ ] Push and PR when the user asks.
+9. [x] Commit on the branch `garage-v2` (2026-11-17), pushed and PR opened (2026-11-19).
 10. [ ] Home Assistant middleware.
 11. [ ] **WiFi network picker** (agreed with the user on 2026-11-19, for after 2.0.3): a list of the networks
     found instead of typing the SSID.
@@ -262,7 +287,7 @@ Bench results (2026-11-17, module firmware 0.6.0):
 
 Open:
 - [ ] Does the module come back by itself after bug 2, and after how long? (Power cycle was used.)
-- [ ] Module firmware of the board in the garage (`modem_fw` in `/info`): the update needs 0.5.0 or later.
+- [x] Module firmware of the board in the garage: 0.6.0, network updates work (2.0.1 to 2.0.3, 2026-11-19).
 - [ ] No rollback: a firmware that boots without network needs USB. Always try a build on the bench board first.
 
 ## Parked ideas

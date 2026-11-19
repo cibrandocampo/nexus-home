@@ -72,8 +72,16 @@ reverses it. The only feedback is the "closed" sensor, so the firmware tracks fo
 |-------|--------------|-----------|
 | `closed` | sensor reads closed | a pulse is sent, or the sensor releases without a pulse from the board |
 | `opening` | pulse while closed, or sensor released | after `DOOR_TRAVEL_MS`: sensor not closed → `open`, sensor closed → `closed` |
-| `open` | opening finished, or a pulse stopped the door | a pulse is sent → `closing`; sensor closes → `closed` |
+| `open` | opening finished, or a pulse stopped the door | a pulse is sent → `closing` (or `opening` if the door was stopped while closing); sensor closes → `closed` |
 | `closing` | pulse while open | sensor closes → `closed`; sensor still not closed after `DOOR_CLOSE_TIMEOUT_MS` → `open` and close failed |
+
+**Stopped part way.** A pulse stops a moving door, and the opener goes the other way on the next pulse
+(checked on the real door on 2026-11-19): stopped while opening, it closes; stopped while closing, it opens.
+The board remembers the direction, so the button, the remote and `/door/toggle` are always shown right. When
+`/door/close` is asked for a door stopped while closing (or `/door/open` for one stopped while opening), one
+pulse would move it the wrong way, so the board sends three, as a person would: the door goes the wrong way
+for about a second, stops, then goes where it was asked (`DOOR_PULSE_GAP_MS` apart). A press of the button
+or `/door/stop` cancels the pulses still to send; other commands answer 409 `door_busy` meanwhile.
 
 The door is only reported `closed` when the sensor says so. `DOOR_TRAVEL_MS` (opening) is 20 s and
 `DOOR_CLOSE_TIMEOUT_MS` is 40 s (measured: 16 s up, 19 s down, up to 30 s when the opener recalibrates
@@ -192,7 +200,7 @@ Base path `/api/v1`. All answers are JSON.
 | GET | `/state` | Current state |
 | GET | `/info` | Device identity and entity list |
 | GET | `/log` | Recent events, newest first |
-| POST | `/door/open` | Open; no-op if already open or opening |
+| POST | `/door/open` | Open; no-op if already open or opening (a door stopped while opening is opened again) |
 | POST | `/door/close` | Close; no-op if already closed or closing |
 | POST | `/door/stop` | Stop a moving door; no-op otherwise |
 | POST | `/door/toggle` | Raw pulse, same as the physical button |

@@ -250,6 +250,78 @@ int main() {
   run(cfg::DOOR_TRAVEL_MS);
   CHECK(lastIs(Event::DoorClosed, Source::Button, Reason::NoMovement));
 
+  // The opener reverses after a stop (real door, 2026-11-19): stopped while opening -> next pulse closes,
+  // stopped while closing -> next pulse opens.
+  boot(false, false);  // fully open
+  CHECK(doorClose() == Cmd::Ok);
+  run(5000);
+  CHECK(doorStop() == Cmd::Ok && state().door == Door::Open);
+  run(2000);
+  CHECK(doorToggle() == Cmd::Ok);
+  CHECK(lastIs(Event::DoorOpening, Source::Api, Reason::Command));  // not "closing"
+  run(cfg::DOOR_TRAVEL_MS + 500);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::TravelEnd) && !state().closeFailed);
+  CHECK(doorOpen() == Cmd::Noop);  // fully open
+  CHECK(doorToggle() == Cmd::Ok && state().door == Door::Closing);  // after a full opening it closes
+  run(5000);
+  doorStop();
+  run(2000);
+  press();  // the push button follows the same rule
+  CHECK(lastIs(Event::DoorOpening, Source::Button, Reason::Command));
+  run(cfg::DOOR_TRAVEL_MS + 500);
+  // Close while stopped part way down: three pulses (opens, stops, closes), then the sensor confirms.
+  doorClose();
+  run(5000);
+  doorStop();
+  run(2000);
+  CHECK(doorClose() == Cmd::Ok && state().door == Door::Opening);
+  CHECK(doorOpen() == Cmd::Busy);  // sequence in progress
+  run(1300);
+  CHECK(state().door == Door::Open);
+  run(1300);
+  CHECK(state().door == Door::Closing);
+  CHECK(recent(ev, 3) == 3 && ev[0].event == Event::DoorClosing && ev[1].event == Event::DoorOpen &&
+        ev[1].reason == Reason::Stopped && ev[2].event == Event::DoorOpening);
+  run(3000);
+  CHECK(state().door == Door::Closing);  // no further pulses
+  sensor(true);
+  run(200);
+  CHECK(lastIs(Event::DoorClosed, Source::Api, Reason::SensorClosed));
+  // Open while stopped part way up: closes, stops, opens.
+  CHECK(doorOpen() == Cmd::Ok);
+  sensor(false);
+  run(5000);
+  doorStop();
+  run(2000);
+  CHECK(doorOpen() == Cmd::Ok && state().door == Door::Closing);
+  run(2600);
+  CHECK(state().door == Door::Opening);
+  run(cfg::DOOR_TRAVEL_MS + 500);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::TravelEnd));
+  // A button press or a stop cancels the sequence.
+  doorClose();
+  run(5000);
+  doorStop();
+  run(2000);
+  CHECK(doorClose() == Cmd::Ok);
+  run(1300);  // second pulse sent: stopped
+  CHECK(doorStop() == Cmd::Ok);  // cancels the third
+  run(3000);
+  CHECK(state().door == Door::Open);
+  doorClose();  // stopped while opening now: one pulse closes
+  CHECK(state().door == Door::Closing);
+  run(3000);
+  doorStop();
+  run(2000);
+  CHECK(doorClose() == Cmd::Ok);  // opens first
+  run(300);
+  press();  // cancels the sequence; too soon after the pulse, so the press itself is ignored
+  CHECK(lastIs(Event::ButtonIgnored, Source::Button, Reason::TooSoon));
+  run(3000);
+  CHECK(state().door == Door::Opening);  // nothing else sent: the door keeps opening
+  run(cfg::DOOR_TRAVEL_MS);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::TravelEnd));
+
   // Uptime keeps counting past 2^32 ticks (497 days): times and ages stay right.
   boot(true, false);
   run(10000);
