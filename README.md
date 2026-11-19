@@ -24,8 +24,8 @@ Individual Arduino-based controllers for each IoT device:
 nexus-home/
 ├── devices/                    # Arduino device controllers
 │   ├── garage-iot-controller/ # Garage door and lighting controller
-│   │   ├── src/               # Arduino source code
-│   │   ├── test/              # API tests (Postman collection)
+│   │   ├── firmware/          # Arduino sketch
+│   │   ├── test/              # Host tests and API smoke test
 │   │   └── README.md          # Device-specific documentation
 │   └── sound-system/          # Smart sound system controller
 │       ├── audio.ino          # Arduino source code
@@ -45,7 +45,8 @@ An Arduino-based controller for automated garage door and lighting system using 
 - Garage door control via button or API
 - Automatic lighting based on door state and time of day
 - Real-time status display on LED matrix
-- REST API for remote control
+- Web page with action buttons and a recent activity log
+- REST API for remote control, designed to map onto Home Assistant entities
 - WiFi connectivity with automatic reconnection
 
 See [devices/garage-iot-controller/README.md](devices/garage-iot-controller/README.md) for detailed documentation.
