@@ -269,6 +269,18 @@ int main() {
   press();  // the push button follows the same rule
   CHECK(lastIs(Event::DoorOpening, Source::Button, Reason::Command));
   run(cfg::DOOR_TRAVEL_MS + 500);
+  // Open while stopped part way down: one pulse, the opener goes up (was a no-op before 2.0.5).
+  doorClose();
+  run(5000);
+  doorStop();
+  CHECK(state().stopped == Dir::Down);
+  run(2000);
+  CHECK(doorOpen() == Cmd::Ok && state().door == Door::Opening && state().stopped == Dir::None);
+  run(3000);
+  CHECK(state().door == Door::Opening);  // a single pulse: nothing else sent
+  run(cfg::DOOR_TRAVEL_MS);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::TravelEnd));
+  CHECK(doorOpen() == Cmd::Noop);  // fully open again
   // Close while stopped part way down: three pulses (opens, stops, closes), then the sensor confirms.
   doorClose();
   run(5000);
@@ -293,6 +305,7 @@ int main() {
   run(5000);
   doorStop();
   run(2000);
+  CHECK(state().stopped == Dir::Up);
   CHECK(doorOpen() == Cmd::Ok && state().door == Door::Closing);
   run(2600);
   CHECK(state().door == Door::Opening);

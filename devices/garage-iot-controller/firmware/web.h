@@ -198,11 +198,11 @@ function when(ago){
 function msg(t,ok){const m=$('msg');m.textContent=t;m.className=ok?'ok':'';m.hidden=false;clearTimeout(mt);mt=setTimeout(()=>m.hidden=true,ok&&t.length>40?9000:4000)}
 function render(){
   const s=last;if(!s)return;
-  const el=Math.floor((Date.now()-lastAt)/1000),d=DOOR[s.door.state],mv=s.door.moving;
-  $('ds').textContent=d[0];$('dd').style.background='var('+d[1]+')';$('dd').className='dot'+(mv?' blink':'');
+  const el=Math.floor((Date.now()-lastAt)/1000),d=DOOR[s.door.state],mv=s.door.moving,part=s.door.stopped!='none';
+  $('ds').textContent=part?'Stopped part way':d[0];$('dd').style.background='var('+d[1]+')';$('dd').className='dot'+(mv?' blink':'');
   $('dsub').textContent='for '+dur(s.door.since_s+el)+(BY[s.door.last_source]?' · '+BY[s.door.last_source]:'');
   $('dfail').hidden=!s.door.close_failed;
-  $('bo').disabled=busy||s.door.state!='closed';
+  $('bo').disabled=busy||!(s.door.state=='closed'||part);
   $('bc').disabled=busy||s.door.state!='open';
   $('bs').disabled=busy||!mv;$('bt').disabled=busy;
   const on=s.light.state=='on',rem=Math.max(0,s.light.remaining_s-el);

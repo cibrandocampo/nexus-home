@@ -17,7 +17,7 @@ Rewrite the garage controller from scratch (Arduino UNO R4 WiFi, door + light bu
 
 | What | Status |
 |------|--------|
-| New firmware in `firmware/` | 2.0.4. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
+| New firmware in `firmware/` | 2.0.5. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
 | Host test of the logic (`test/run.sh`) | **Passes** |
 | Garage board | In production since 2026-11-17 (`garage-3562d4`, 10.1.3.103, modem_fw 0.6.0, RSSI -77 to -83 dBm). Installation checks done on 2026-11-19, see below |
 | Web page | Works in the browser (reviewed 2026-11-19) |
@@ -197,6 +197,8 @@ the firmware misbehaves, stay on v2 and fix it: the wiring is already the new on
 - [x] **A pulse while moving stops the door** (confirmed by the user and on the real door, 2026-11-19). The next
       pulse goes the other way: stopped while closing, it opens. Before 2.0.4 the board showed "closing" and
       raised a false close_failed after 40 s. 2.0.4 remembers the direction (see README, "Stopped part way").
+      2.0.5 reports it (`door.stopped`) so the web page offers Open, and `/door/open` no longer ignores a door
+      stopped while closing.
 - [ ] **Default light duration through the API:** 120 s. For Home Assistant, no timer may be better.
 - [x] Input wiring in the real installation (per the user, from memory, "I think 4.7 kΩ"): pull-downs to
       GND on pins 9 and 11; pin 12 is the usual LDR circuit and stays active high. The old documentation
@@ -223,7 +225,7 @@ the firmware misbehaves, stay on v2 and fix it: the wiring is already the new on
 5. [x] Rewire the real installation for the active-low inputs and confirm the assumptions (2026-11-19, see
       "Garage installation").
 6. [x] **Watchdog** (2026-11-17): see "Watchdog" under Decisions. Tested on the bench board.
-7. [x] **Stored settings, WiFi setup mode and restart button** (2026-11-17): see [PLAN_SETTINGS.md](PLAN_SETTINGS.md).
+7. [x] **Stored settings, WiFi setup mode and restart button** (2026-11-17): see README, "First setup" and "Stored settings".
    One binary for every door, with no secrets in it. Checked on the bench board: setup page from a phone, restart
    from the web, settings kept after a firmware upload over USB, 401/403 on settings and restart without token.
    WiFi change with a wrong password: back on the old network after ~70 s, `wifi_change_failed` logged (2026-11-17).
