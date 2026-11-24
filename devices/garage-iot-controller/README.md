@@ -77,7 +77,8 @@ reverses it. The only feedback is the "closed" sensor, so the firmware tracks fo
 
 **Stopped part way.** A pulse stops a moving door, and the opener goes the other way on the next pulse
 (checked on the real door on 2026-11-19): stopped while opening, it closes; stopped while closing, it opens.
-The board remembers the direction, so the button, the remote and `/door/toggle` are always shown right. When
+The board remembers the direction (`door.stopped` in the state), so the button, the remote and `/door/toggle`
+are always shown right, and both `/door/open` and `/door/close` work. When
 `/door/close` is asked for a door stopped while closing (or `/door/open` for one stopped while opening), one
 pulse would move it the wrong way, so the board sends three, as a person would: the door goes the wrong way
 for about a second, stops, then goes where it was asked (`DOOR_PULSE_GAP_MS` apart). A press of the button
@@ -200,8 +201,8 @@ Base path `/api/v1`. All answers are JSON.
 | GET | `/state` | Current state |
 | GET | `/info` | Device identity and entity list |
 | GET | `/log` | Recent events, newest first |
-| POST | `/door/open` | Open; no-op if already open or opening (a door stopped while opening is opened again) |
-| POST | `/door/close` | Close; no-op if already closed or closing |
+| POST | `/door/open` | Open; no-op if fully open or opening (a door stopped part way is opened) |
+| POST | `/door/close` | Close; no-op if already closed or closing (a door stopped part way is closed) |
 | POST | `/door/stop` | Stop a moving door; no-op otherwise |
 | POST | `/door/toggle` | Raw pulse, same as the physical button |
 | POST | `/light/on` | Light on. `duration` in seconds (default 120, `0` = no timer) |
@@ -221,7 +222,7 @@ Base path `/api/v1`. All answers are JSON.
 {
   "rev": 42,
   "uptime_s": 86400,
-  "door": {"state": "closed", "moving": false, "sensor_closed": true, "close_failed": false, "since_s": 3600, "last_source": "api"},
+  "door": {"state": "closed", "moving": false, "sensor_closed": true, "close_failed": false, "stopped": "none", "since_s": 3600, "last_source": "api"},
   "light": {"state": "off", "timed": false, "remaining_s": 0},
   "night": false,
   "light_level": 512,
@@ -233,6 +234,9 @@ Base path `/api/v1`. All answers are JSON.
 
 - `door.state`: `closed`, `opening`, `open` or `closing`.
 - `door.close_failed`: `true` when the last close was not confirmed by the sensor (see Behaviour).
+- `door.stopped`: with `door.state` `open`, whether a pulse stopped the door part way and which way it was
+  going: `up` (the next pulse closes it), `down` (the next pulse opens it) or `none` (fully open, or not
+  `open`). The web page shows "Stopped part way" and enables both Open and Close.
 - `door.last_source`: `button` (push button or remote control, both wired to pin 9), `api`, `sensor` (change detected by the closed sensor without a pulse from this board: by hand or another remote) or `none` (nothing since the last restart). The web page shows it under the door state.
 - `light_level`: light sensor reading (AO, pin A0), 0-1023, higher = darker, averaged once per second.
   `night` is decided from it (see Behaviour). It does not change `rev`.
@@ -329,6 +333,10 @@ network changes: the board then drops the connection to try the new network.
 | Night | `binary_sensor` | `night` | |
 | Light level | `sensor` (raw, higher = darker) | `light_level` | |
 | Signal | `sensor` (`signal_strength`, dBm) | `wifi.rssi` | |
+
+Home Assistant disables "open" on an `open` cover without a position. For a door stopped part way
+(`door.stopped` not `none`) the middleware should report a position between 0 and 100 (e.g. 50), so both
+open and close are offered.
 
 `GET /info` returns the device id, name, model, firmware version, WiFi module firmware
 (`modem_fw`), mode (`normal`, `setup` or `unconfigured`), cause of the last start (`reset_reason`: `power`,

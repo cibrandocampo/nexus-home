@@ -99,11 +99,11 @@ size_t stateJson(char* out, size_t n) {
   const bool moving = s.door == garage::Door::Opening || s.door == garage::Door::Closing;
   return snprintf(out, n,
                   "{\"rev\":%lu,\"uptime_s\":%lu,"
-                  "\"door\":{\"state\":\"%s\",\"moving\":%s,\"sensor_closed\":%s,\"close_failed\":%s,\"since_s\":%lu,\"last_source\":\"%s\"},"
+                  "\"door\":{\"state\":\"%s\",\"moving\":%s,\"sensor_closed\":%s,\"close_failed\":%s,\"stopped\":\"%s\",\"since_s\":%lu,\"last_source\":\"%s\"},"
                   "\"light\":{\"state\":\"%s\",\"timed\":%s,\"remaining_s\":%lu},"
                   "\"night\":%s,\"light_level\":%u,\"button\":%s,\"display\":%s,"
                   "\"wifi\":{\"ip\":\"%s\",\"rssi\":%d}}",
-                  (unsigned long)s.rev, (unsigned long)s.uptimeS, garage::name(s.door), b(moving), b(s.sensorClosed), b(s.closeFailed),
+                  (unsigned long)s.rev, (unsigned long)s.uptimeS, garage::name(s.door), b(moving), b(s.sensorClosed), b(s.closeFailed), garage::name(s.stopped),
                   (unsigned long)s.doorSinceS, garage::name(s.doorSource), s.light ? "on" : "off", b(s.lightTimed),
                   (unsigned long)s.lightRemainingS, b(s.night), (unsigned)s.lightLevel, b(s.button), b(display::enabled()), net::ip(), net::rssi());
 }
@@ -277,8 +277,8 @@ const char* errorMessage(const char* code) {
 
 void respondInvalid(const char* code) { respondError(400, code, errorMessage(code)); }
 
-// Applies the fields present in the body to d. Returns an error code or nullptr.
-// wifiChanged is set when the network or its password is in the body and differs.
+// Applies the fields present in the body to d and checks the result. Returns an error code or nullptr.
+// A network and a token are always required (the token cannot be removed from the web). wifiChanged is set when the network or its password is in the body and differs.
 const char* applyFields(const char* payload, settings::Data& d, bool& wifiChanged) {
   wifiChanged = false;
   uint32_t v;
@@ -308,7 +308,21 @@ const char* applyFields(const char* payload, settings::Data& d, bool& wifiChange
       strcpy(d.password, pass);
     }
   }
-  return nullptr;
+  if (!d.ssid[0]) return "invalid_ssid";
+  if (!d.token[0]) return "invalid_token";
+  return settings::validate(d);
+}
+
+// Settings that take effect at once, after a save.
+void useSettings(const settings::Data& d) {
+  garage::configure({d.openS, d.closeS, d.lightS, d.nightLevel});
+  display::setEnabled(d.display);
+}
+
+// Restart and firmware update are refused while the door moves, so they never cut a movement.
+bool doorBusy() {
+  const garage::State st = garage::state();
+  return st.door == garage::Door::Opening || st.door == garage::Door::Closing || st.relayPulse;
 }
 
 // POST /api/v1/settings (normal mode, token). Name, token and timings are saved at once;
@@ -317,11 +331,7 @@ void handleSettings(const char* payload) {
   const settings::Data old = settings::get();
   settings::Data d = old;
   bool wifiChanged;
-  const char* err = applyFields(payload, d, wifiChanged);
-  if (!err && !d.ssid[0]) err = "invalid_ssid";
-  if (!err && !d.token[0]) err = "invalid_token";  // the token cannot be removed from the web
-  if (!err) err = settings::validate(d);
-  if (err) return respondInvalid(err);
+  if (const char* err = applyFields(payload, d, wifiChanged)) return respondInvalid(err);
 
   settings::Data keep = d;  // what is saved now: everything except a new network
   strcpy(keep.ssid, old.ssid);
@@ -334,8 +344,7 @@ void handleSettings(const char* payload) {
       garage::note(garage::Event::SettingsSaveFailed, garage::Source::Api);
       return respondError(500, "save_failed", "Could not write the settings to flash");
     }
-    garage::configure({keep.openS, keep.closeS, keep.lightS, keep.nightLevel});
-    display::setEnabled(keep.display);
+    useSettings(keep);
     garage::note(garage::Event::SettingsChanged, garage::Source::Api);
   }
   if (wifiChanged) {
@@ -351,23 +360,16 @@ void handleSettings(const char* payload) {
 void handleSetup(const char* payload) {
   settings::Data d = settings::get();
   bool wifiChanged;
-  const char* err = applyFields(payload, d, wifiChanged);
-  if (!err && !d.ssid[0]) err = "invalid_ssid";
-  if (!err && !d.token[0]) err = "invalid_token";
-  if (!err) err = settings::validate(d);
-  if (err) return respondInvalid(err);
+  if (const char* err = applyFields(payload, d, wifiChanged)) return respondInvalid(err);
   if (!settings::save(d)) return respondError(500, "save_failed", "Could not write the settings to flash");
-  garage::configure({d.openS, d.closeS, d.lightS, d.nightLevel});
-  display::setEnabled(d.display);
+  useSettings(d);
   garage::note(garage::Event::SettingsChanged);
   respondSettings("ok");
 }
 
-// POST /api/v1/restart. Refused while the door moves, so a restart never cuts a movement.
+// POST /api/v1/restart.
 void handleRestart() {
-  const garage::State st = garage::state();
-  if (st.door == garage::Door::Opening || st.door == garage::Door::Closing || st.relayPulse)
-    return respondError(409, "door_busy", "Door is moving, restart refused");
+  if (doorBusy()) return respondError(409, "door_busy", "Door is moving, restart refused");
   restartAfter = true;
   respondJson(200, snprintf(body, sizeof body, "{\"result\":\"restarting\"}"));
 }
@@ -381,9 +383,7 @@ void handleFirmware(const char* payload) {
   // The URL goes into an AT command: only plain http:// and no separators of that command.
   if (strncmp(url, "http://", 7) != 0 || strpbrk(url, ",\" \r\n"))
     return respondError(400, "invalid_url", "url must be http:// without spaces, commas or quotes");
-  const garage::State st = garage::state();
-  if (st.door == garage::Door::Opening || st.door == garage::Door::Closing || st.relayPulse)
-    return respondError(409, "door_busy", "Door is moving, update refused");
+  if (doorBusy()) return respondError(409, "door_busy", "Door is moving, update refused");
   const char* err = fwupdate::fetch(url);
   if (err) {
     garage::note(garage::Event::FirmwareUpdateFailed, garage::Source::Api);

@@ -6,6 +6,9 @@
 namespace garage {
 
 enum class Door : uint8_t { Closed, Opening, Open, Closing };
+// Direction an `open` door was moving when a pulse stopped it part way (None: not stopped part way).
+// The opener reverses on the next pulse: stopped going up -> it closes; going down -> it opens.
+enum class Dir : uint8_t { None, Up, Down };
 // Sensor: change detected by the closed sensor without a pulse from this board (cause unknown).
 // Auto: light timer / auto light.
 enum class Source : uint8_t { None, Button, Api, Sensor, Auto };
@@ -42,6 +45,7 @@ struct State {
   uint32_t uptimeS;
   Door     door;
   Source   doorSource;        // what caused the last door movement
+  Dir      stopped;           // open door stopped part way, and which way it was going
   uint32_t doorSinceS;        // seconds in the current door state
   bool     sensorClosed;
   bool     closeFailed;       // a close was sent and the sensor did not confirm it in time
@@ -86,6 +90,7 @@ size_t recent(LogEntry* out, size_t max);  // newest first; returns how many wer
 void   note(Event e, Source src = Source::None);  // for events from outside the core (network, settings)
 
 const char* name(Door d);
+const char* name(Dir d);
 const char* name(Event e);
 const char* name(Source s);
 const char* name(Reason r);
