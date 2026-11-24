@@ -8,8 +8,7 @@ The project is structured in two main blocks:
 
 ### 1. Web Platform
 A centralized web application for managing all IoT devices:
-- **Backend**: Django or FastAPI (to be implemented)
-- **Frontend**: Angular or Vue.js (to be implemented)
+- **Middleware**: manages the WiFi devices and integrates them with Home Assistant (stack to be decided)
 - **Purpose**: Provides a unified interface to monitor, control, and configure all connected IoT devices
 
 ### 2. Arduino Device Controllers
@@ -31,8 +30,6 @@ nexus-home/
 │       ├── audio.ino          # Arduino source code
 │       └── README.md          # Device-specific documentation
 ├── platform/                   # Web platform (to be implemented)
-│   ├── backend/               # Django/FastAPI backend
-│   └── frontend/              # Angular/Vue.js frontend
 └── README.md                  # This file
 ```
 
@@ -81,10 +78,16 @@ See [devices/sound-system/README.md](devices/sound-system/README.md) for detaile
 3. Document the device in its own README.md
 4. Update this README to include the new device
 
+## Development
+
+Work is done with Claude Code following the workflow in [CLAUDE.md](CLAUDE.md): features are planned
+in `docs/plans/`, split into tasks in `docs/tasks/`, implemented with independent QA per task and
+delivered as one pull request per feature. CI (`.github/workflows/ci.yml`) runs the garage host tests
+and builds its firmware on every pull request.
+
 ## Future Development
 
-- [ ] Implement web platform backend (Django/FastAPI)
-- [ ] Implement web platform frontend (Angular/Vue.js)
+- [ ] Implement the platform (middleware for the WiFi devices + Home Assistant integration; stack to be decided)
 - [ ] Add device discovery and registration system
 - [ ] Implement centralized device management dashboard
 - [ ] Add authentication and security features

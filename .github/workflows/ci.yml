@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  garage-firmware:
+    name: Garage firmware (host tests + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devices/garage-iot-controller
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install the UNO R4 core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:renesas_uno@1.6.0
+      - name: Host tests and build
+        run: tools/build.sh
