@@ -32,6 +32,16 @@ server=$!
 trap 'kill $server 2>/dev/null' EXIT INT TERM
 sleep 1
 
+# The board can install the update even when this script loses track of it (the request timed out, the
+# board took longer to come back): before reporting a failure, ask which version it runs.
+fail() {
+  echo "$1" >&2
+  now=$(curl -s -m 5 "http://$board/api/v1/info" | sed -n 's/.*"sw_version":"\([^"]*\)".*/\1/p')
+  [ "$now" = "$version" ] && [ "$from" != "$version" ] && { echo "but the controller now runs $version: done"; exit 0; }
+  echo "the controller runs '${now:-not answering}'" >&2
+  exit 1
+}
+
 url="http://$me:$port/garage-$version.ota"
 # The controller also checks the URL before downloading (a URL that does not answer would hang its WiFi
 # module), but a firewall on this computer would make every attempt fail: check from here first.
@@ -42,6 +52,10 @@ answer=$(curl -sS -m 150 -X POST -H "Authorization: Bearer $GARAGE_TOKEN" -H 'Co
   -d "{\"url\":\"$url\"}" -w '\n%{http_code}' "http://$board/api/v1/firmware") || true
 code=$(echo "$answer" | tail -n 1)
 echo "$answer" | sed '$d'
+if [ "$code" = 000 ]; then  # no answer: the board may still have downloaded it and be flashing
+  sleep 90
+  fail "no answer to the update request"
+fi
 [ "$code" = 200 ] || { echo "update not started (HTTP $code)" >&2; exit 1; }
 
 echo "downloaded and verified; flashing and restarting (about a minute)..."
@@ -53,9 +67,8 @@ while [ $i -lt 90 ]; do
   if [ -n "$up" ] && [ "$up" -lt $((i * 2 + 5)) ]; then
     now=$(curl -s -m 2 "http://$board/api/v1/info" | sed -n 's/.*"sw_version":"\([^"]*\)".*/\1/p')
     if [ "$now" = "$version" ]; then echo "done: $from -> $version"; exit 0; fi
-    echo "restarted but runs '$now', not $version" >&2; exit 1
+    fail "restarted but runs '$now', not $version"
   fi
   i=$((i + 1))
 done
-echo "the controller is not back with $version after 3 minutes; check it (a USB upload recovers it)" >&2
-exit 1
+fail "the controller is not back with $version after 3 minutes; check it (a USB upload recovers it)"

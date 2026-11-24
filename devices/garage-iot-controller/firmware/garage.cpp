@@ -17,10 +17,6 @@ struct Input {
   uint16_t count;
 };
 
-// Direction the door was moving when a pulse stopped it. The opener reverses on the next pulse:
-// stopped while opening -> it closes; stopped while closing -> it opens (checked on the real door, 2026-11-19).
-enum class Dir : uint8_t { None, Up, Down };
-
 struct Core {
   uint64_t ticks;       // 64-bit: a 32-bit count would wrap after 497 days
   uint32_t rev;
@@ -321,6 +317,7 @@ State state() {
   o.uptimeS = (uint32_t)(s.ticks / TICK_HZ);
   o.door = s.door;
   o.doorSource = s.doorSource;
+  o.stopped = s.stopped;
   o.doorSinceS = (uint32_t)((s.ticks - s.doorSince) / TICK_HZ);
   o.sensorClosed = s.closed.state;
   o.closeFailed = s.closeFailed;
@@ -398,7 +395,10 @@ Cmd doorOpen(Source src) {
   switch (s.door) {
     case Door::Closed:  return pulse(src) ? Cmd::Ok : Cmd::Busy;
     case Door::Closing: return Cmd::Busy;
-    case Door::Open:    return s.stopped == Dir::Up ? reverseThen(src) : Cmd::Noop;  // part way: next pulse closes
+    case Door::Open:
+      if (s.stopped == Dir::Up) return reverseThen(src);                      // next pulse would close
+      if (s.stopped == Dir::Down) return pulse(src) ? Cmd::Ok : Cmd::Busy;   // next pulse opens
+      return Cmd::Noop;                                                       // fully open
     default:            return Cmd::Noop;
   }
 }
@@ -453,6 +453,14 @@ const char* name(Door d) {
     case Door::Opening: return "opening";
     case Door::Open:    return "open";
     default:            return "closing";
+  }
+}
+
+const char* name(Dir d) {
+  switch (d) {
+    case Dir::Up:   return "up";
+    case Dir::Down: return "down";
+    default:        return "none";
   }
 }
 
