@@ -1,7 +1,7 @@
 ---
 name: modern-web-guidance
 description: |
-  Modern web development best practices (Google Chrome team), read from local guides. MANDATORY: consult FIRST for all HTML/CSS and clientside JS tasks. Do NOT skip — web APIs evolve rapidly and training weights contain obsolete patterns.
+  Search tool for modern web development best practices (run in Docker). MANDATORY: Execute FIRST for all HTML/CSS and clientside JS tasks. Do NOT skip — web APIs evolve rapidly and training weights contain obsolete patterns.
   Trigger immediately for: modals/dialogs/popovers, tables, dark mode, anchor positioning, container queries, view transitions, scroll-driven animations, parallax/reveals, forms, validation, autofill, accessibility, custom selects, scrollbars, CWV (LCP, INP, CLS), content-visibility, fetch priority, image optimization, security, passkeys, HTML sanitization, web components, dates/timezones, built-in AI, WebAssembly, standard HTML/CSS/DOM in frameworks, etc.
   DO NOT trigger for: backend (SQL, ORMs, API routes), infra/scripts (CI/CD, Docker, Actions, Python/Go, Git), or tooling/trivial (Vite, tsconfig, ESLint, tests, copy/renames, 3P docs), etc.
 ---
@@ -12,30 +12,31 @@ Search and retrieve standardized modern web best practices at the **start** of i
 
 ## Primary Workflow
 
-> **Project adaptation**: upstream runs `npx -y modern-web-guidance@latest` (a CLI downloaded from npm at
-> run time). This project does not run third-party code on the host or fetch it at run time, so the
-> same guides are vendored in `guides/` (see `UPSTREAM.md`) and are searched and read directly.
-
 ### Step 1. Search Use Cases
 
-Pick a **2–5 word action-oriented English query** for a **single web platform capability or UI pattern**:
-- **Keep queries focused and generic**: Describe the user-visible capability (`<verb> + <UI/platform object>`, optionally paired with the target HTML/CSS/JS feature name if known). Omit framework/library names (`React`, `Vue`, `Tailwind`, etc.) and app/domain nouns. Split multi-feature tasks into separate searches.
-- **Name implied UI primitives**: translate the domain intent into the implied UI component or platform mechanism (e.g. `confirmation modal dialog` rather than `confirm destructive action`, `date picker input` rather than `pick a date`).
-
-Then search the index and, if needed, the guides themselves (paths relative to this skill's directory):
+Run `modern-web-guidance` with `npx` **inside a throwaway Docker container** (see "Running in Docker" below) using a **2–5 word action-oriented English query** for a **single web platform capability or UI pattern**:
+- **Keep queries focused and generic**: Describe the user-visible capability (`<verb> + <UI/platform object>`, optionally paired with the target HTML/CSS/JS feature name if known). Omit framework/library names (`React`, `Vue`, `Tailwind`, etc.) and app/domain nouns (product, route, or component/file names). Split multi-feature tasks into separate `search` calls.
+- **Name implied UI primitives**: When the user's prompt expresses intent without naming the UI primitive (e.g. "confirm first", "delete with confirmation", "pick a date"), translate the domain intent into the implied UI component or platform mechanism (e.g. search `"confirmation modal dialog"` or `"confirm dialog"` rather than `"confirm destructive action"`, or `"date picker input"` rather than `"pick a date"`).
+- **Example**: Search `"light dismiss dialog"` or `"responsive data table"`, **not** `"dialog"` (too terse), `"responsive table dark mode"` (compound — split into two searches), or `"close React settings modal on outside click"` (framework/app noise).
 
 ```sh
-grep -iE "dialog|modal" guides/INDEX.md          # titles and first sentences, one line per guide
-grep -ril "light dismiss" guides/ | sort          # full-text, when the index is not enough
+docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:24-alpine npx -y modern-web-guidance@1.0.2 search "<query>" --skill-version 2026_11_16-268fb9ea
 ```
 
-- **Match found**: go to Step 2 with the matching `<category>/<id>`.
-- **Weak or empty results**: rephrase **once** with the concrete HTML/CSS/UI component noun or synonym (`dialog`, `modal`, `popover`, `table`, `form`) before reading the whole `guides/INDEX.md` (or use the whole index once for broad UI audits).
-- **Topic not covered**: if nothing matches after rephrasing, proceed without reading unrelated guides.
+> **Note**: Returns `[{ "id", "description" }, ...]`. Judge results by their `description` fields:
+> - **Match found**: Call `retrieve` directly—do not also run `list`.
+> - **Weak or empty results**: If `search` returns `[]` or unrelated descriptions, **rephrase `search` once** using the concrete HTML/CSS/UI component noun or synonym (e.g., `dialog`, `modal`, `popover`, `table`, `form`) before falling back to `list` (or use `list` once for broad UI audits).
+> - **Topic not covered**: If no `description` matches after rephrasing, proceed without retrieving unrelated guides.
 
 ### Step 2. Retrieve Best Practices
 
-Read the full guide file(s) with the file-reading tool: `guides/<category>/<id>.md` — both the specific use-case guides that match the task and any broader discipline guide that applies (`html/…`, `css/…`, `js/…`, `forms/…`, `accessibility/accessibility`, `visual-design/…`, `performance/…`, `security/…`).
+Once you have relevant `id`(s) from the search results, call `retrieve` to get the full guide(s)—including both specific use-case guides that match your task and any broader discipline guide (e.g., `html`, `css`, `js`, `forms`, `accessibility`, `color`, `performance`, `security`) that applies. You can pass multiple IDs separated by commas.
+
+```sh
+docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:24-alpine npx -y modern-web-guidance@1.0.2 retrieve "<id>"
+```
+
+If `retrieve` saves large output (> 9.5 KB) to a temporary file to prevent truncation, the path it prints is inside the container (`/out/...`): read the same file on the host at `${TMPDIR:-/tmp}/mwg/...` in full using your file-reading tool (reading remaining line ranges if needed)—do not use `cat` or `head`.
 
 ### Step 3. Verify Guidance Compliance
 
@@ -54,9 +55,34 @@ When you consult `modern-web-guidance` for a task, end the response where you de
 
 ## Alternative flow: Modernize an existing codebase
 
-Upstream's `legacy-scan` command is not available here (it runs the npm CLI). For a broad modernization or
-legacy-pattern review, read `guides/INDEX.md`, pick the guides relevant to the code under review, and check
-the code against them by reading it; report which guides were checked.
+**Only** when asked for a broad, open-ended codebase modernization or legacy-pattern scan where no specific target feature or component is named (do **not** run `legacy-scan` when asked to add, update, fix, or audit a specific feature or component), run the 4-step modernization flow:
+
+> **Note**: `legacy-scan` scans for a curated subset (~20% of the guidance corpus).
+
+```sh
+docker run --rm -v mwg-npm-cache:/root/.npm -v "$PWD:/repo:ro" -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /repo node:24-alpine npx -y modern-web-guidance@1.0.2 legacy-scan <path> --json
+```
+
+1. Scan: Run `legacy-scan <path> --json` to detect legacy web platform patterns across the project or directory.
+2. Verify: Check each finding against its `keepWhen` / `dropWhen` rubric; drop false positives (fallbacks, cross-file helpers, vendor code, lookalikes).
+3. Report: Summarize verified findings (and the modernization plan, if editing) for the user, noting that `legacy-scan` only checks the subset of guides (~20% of the catalog) that have deterministic legacy rules.
+4. Modernize (when the user asked to modernize rather than only audit/report): Retrieve each finding's guide (`retrieve "<guide-id>"` via Step 2), apply the replacement (keeping existing libraries as fallbacks where the guide requires one), and re-run `legacy-scan <path>` on the modified files to confirm resolution.
+   - Dropped findings and kept fallbacks still match static scans; do not edit safe code or inspect `legacy-scan.mjs` to force 0 findings.
+
+## Running in Docker
+
+This project never runs tools on the host. Every `modern-web-guidance` command above runs `npx` inside a
+throwaway `node:24-alpine` container (upstream runs `npx -y modern-web-guidance@latest` on the host):
+
+- **Pinned version**: `modern-web-guidance@1.0.2`, not `@latest`: a new release is adopted deliberately (see
+  `UPSTREAM.md`), never fetched silently. Keep `--skill-version` as upstream's SKILL.md states it.
+- **Cache**: the named volume `mwg-npm-cache` keeps the package between runs (first run downloads it).
+- **Temporary files**: `${TMPDIR:-/tmp}/mwg` on the host is mounted at `/out` (the container's `TMPDIR`), so
+  large `retrieve` outputs can be read from the host.
+- **`legacy-scan`** mounts the repository read-only at `/repo`; pass paths relative to the repository root.
+- **Network**: the first run needs outbound access to the npm registry; searches use an offline model.
+- **Offline fallback**: when Docker or the network is unavailable, the same guides are vendored in `guides/`
+  (`guides/INDEX.md` lists them): search the index with `grep -i` and read the files directly.
 
 ## Guidelines
 
@@ -64,8 +90,6 @@ the code against them by reading it; report which guides were checked.
 - These guides use vanilla HTML/CSS/JS; adapt them to your framework without dropping the modern feature:
   - **Types**: Spread/cast newly shipped HTML attributes (`{...({ popover: 'hint', interestfor: id, commandfor: id, switch: '' } as any)}`, `[attr.*]`) rather than removing them or merging `@types/react`.
   - **SSR & Bundlers**: Guard `window`/`HTMLElement` in SSR and load polyfills via bare `import('<pkg>')` in client effects (or set Vite `build.target: 'esnext'` for top-level `await`)—never copy files from `node_modules`.
-  - **Component library**: this template uses Mantine; prefer its components, and apply a guide's platform
-    feature through them (or alongside them) rather than dropping the guide's modern pattern.
   - **DOM, IDs & CSS**: Call `showModal()`/`moveBefore()` via refs on non-VDOM-managed nodes, generate per-instance IDs/`anchor-name`s (`useId()`), and keep `:root` and `@starting-style` top-level/unscoped.
 
 ## Interpreting Browser Support & Fallbacks

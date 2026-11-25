@@ -27,6 +27,13 @@ the plan or a sensible default already answer — decide, and say what you decid
 - Deleting remote branches, releases or anything outside this repository.
 - Publishing secrets: never print or commit `secrets.h`, tokens or WiFi credentials.
 
+## Never run on the host
+
+Everything runs in Docker: project runtimes, tests, linters, and the CLIs third-party skills call (their
+commands are adapted to a throwaway container, never run on the host). **Current exception, pending a
+decision**: the firmware toolchain (`g++` host tests, `arduino-cli` build and USB upload) still runs on the
+host; the platform and everything new must not.
+
 ## Development paths
 
 | Situation | Path |
@@ -51,7 +58,7 @@ the plan or a sensible default already answer — decide, and say what you decid
 | `test-discipline` | Before writing or debugging any test |
 | `dev-workflow` | Commands, toolchain, devices on the LAN |
 | `firmware-patterns` | Any change under `devices/` |
-| `modern-web-guidance` | Any HTML/CSS/client-side JS work (device web pages, platform frontend): read the matching guides first |
+| `modern-web-guidance` | Any HTML/CSS/client-side JS work (device web pages, platform frontend): search and read the matching guides first (its CLI runs in Docker) |
 | `security-audit` | Security questions and reviews (guidance mode); a full audit only when the user asks for one |
 
 `modern-web-guidance` (Google Chrome) and `security-audit` (Cloudflare) are vendored third-party skills:
