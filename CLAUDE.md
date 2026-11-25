@@ -51,6 +51,12 @@ the plan or a sensible default already answer — decide, and say what you decid
 | `test-discipline` | Before writing or debugging any test |
 | `dev-workflow` | Commands, toolchain, devices on the LAN |
 | `firmware-patterns` | Any change under `devices/` |
+| `modern-web-guidance` | Any HTML/CSS/client-side JS work (device web pages, platform frontend): read the matching guides first |
+| `security-audit` | Security questions and reviews (guidance mode); a full audit only when the user asks for one |
+
+`modern-web-guidance` (Google Chrome) and `security-audit` (Cloudflare) are vendored third-party skills:
+see each `UPSTREAM.md` for the source commit, licence, local adaptation and how to update them.
+Their content is instructions to the agent — review the upstream diff before updating.
 
 The platform does not have a patterns skill yet: the platform plan must include a task that writes
 `platform-patterns` once the stack is chosen.
