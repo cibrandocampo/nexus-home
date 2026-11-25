@@ -150,18 +150,21 @@ network change; the sound system (Arduino UNO without WiFi); automations; notifi
 ## Implementation order
 
 1. Bring the template into `platform/`, CI jobs, `platform-patterns` skill, Docker Hub name.
-2. Device simulator (fake garage implementing `/api/v1` from the README, with doors that move in
+2. Firmware toolchain into Docker (user decision 2026-11-25: nothing runs on the host): an image with
+   `g++`, `arduino-cli` and the `arduino:renesas_uno` 1.6.0 core for host tests, build and `.ota`; USB upload
+   to the bench board from a container (`--device`); scripts and CI use it.
+3. Device simulator (fake garage implementing `/api/v1` from the README, with doors that move in
    simulated time), used by tests, by the dev compose and by E2E.
-3. Device model, token encryption, manual add, roles `user`/`admin` checks.
-4. Discovery scan.
-5. Polling, online/offline, event bus, state API.
-6. Event history (collection, de-duplication, retention, API).
-7. Commands and their audit.
-8. Settings and token rotation.
-9. Firmware: release workflow in nexus-home, GitHub sync, upload + `.bin` → `.ota`, update flow.
-10. Frontend: device list, device page (entities, commands, state), history, scan/add, settings,
+4. Device model, token encryption, manual add, roles `user`/`admin` checks.
+5. Discovery scan.
+6. Polling, online/offline, event bus, state API.
+7. Event history (collection, de-duplication, retention, API).
+8. Commands and their audit.
+9. Settings and token rotation.
+10. Firmware: release workflow in nexus-home, GitHub sync, upload + `.bin` → `.ota`, update flow.
+11. Frontend: device list, device page (entities, commands, state), history, scan/add, settings,
     firmware pages.
-11. E2E against the simulator; deployment docs; checks on the bench board.
+12. E2E against the simulator; deployment docs; checks on the bench board.
 
 ## Testing strategy
 
