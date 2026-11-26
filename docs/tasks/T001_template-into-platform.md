@@ -134,3 +134,42 @@ installed: every check ran the compose/docker commands of the matching Makefile 
   `platform/frontend/src/lib/x.js` tracked, `node_modules/`, `dist/`, `build/` still ignored); the
   Files table's root `.gitignore` row is superseded by the nested file (see the notes above).
 - Re-checked: backend 100 % coverage, e2e suite with no failures.
+
+## QA — RETURNED (round 2)
+
+**Date**: 2026-11-26
+
+Reviewed fix commit `7a3bc45` (8 files; `platform/` changes are only the ones listed under "Fixes after
+QA round 1"). The checks the change touches were re-run; frontend code is unchanged.
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| B1 | `.env.example:43` `EMAIL_FROM=nexusHome <no-reply@example.com>` | `docs/tasks/evidence/T001/qa/round2/rename-sweep.txt` | PASS |
+| B2 | `config.py:13,37` and `configuration.md:30,65` all say nexusHome (code and docs agree) | `docs/tasks/evidence/T001/qa/round2/rename-sweep.txt` | PASS |
+| 1 | Rename sweep: no "My App" / "yourname" / default "App" left; DoD grep only `TEMPLATE.md`, `CHANGELOG.md`; `git status platform` clean | `docs/tasks/evidence/T001/qa/round2/rename-sweep.txt` | PASS |
+| 2 | Backend lint, format, 325 passed, 100 % (1135 stmts, 204 branches); e2e Prettier clean | `docs/tasks/evidence/T001/qa/round2/backend.txt` | PASS |
+| 3 | Compose fallbacks without `PROJECT_NAME`: `nexus`, `nexus-dev`, `nexus-e2e` | `docs/tasks/evidence/T001/qa/round2/compose-names.txt` | PASS |
+| 4 | e2e rebuilt and run as project `nexus-e2e`: 15 passed, torn down, no e2e container left | `docs/tasks/evidence/T001/qa/round2/e2e.txt` | PASS |
+| 5 | `git check-ignore`: `lib/`, `env/`, `var/`, `lib64/`, `target/`, `cover/` under `platform/` not ignored; `node_modules/`, `dist/`, `build/`, `coverage/`, `.coverage`, `.venv/`, `.env`, `e2e/artifacts/`, `data/`, caches, `*.egg-info` still ignored; no tracked file matches a rule | `docs/tasks/evidence/T001/qa/round2/gitignore.txt` | PASS |
+| 6 | Documented defaults match the code after the fix | `docs/tasks/evidence/T001/qa/round2/rename-sweep.txt` | FAIL |
+
+### Blockers
+- **B3**: `platform/docs/configuration.md:29`. The fix changed the compose fallbacks to
+  `${PROJECT_NAME:-nexus}` (`docker-compose.yml:5`, `dev/docker-compose.yml:5`, `e2e/docker-compose.yml:5`),
+  but the table still gives `PROJECT_NAME` the default `app`. Expected: `nexus`. This is the same kind of
+  code/docs mismatch as B2, introduced by this fix. Evidence: `rename-sweep.txt`
+  ("compose project-name fallbacks") and `compose-names.txt`.
+
+### Observations (non-blocking)
+- The first e2e run (`round2/e2e-run1-interfered.txt`) failed in `global-setup.js:12` ("Welcome!" not
+  shown). It shared a `nexus-e2e` db and mailpit that were already running when it started (compose
+  reported them as "Running", not "Created"), so the admin had already been onboarded by another run.
+  This was interference, not a code fault. Its `down -v` also removed that other stack. After checking
+  that no `nexus-e2e` containers, volumes or networks were left, the re-run from a clean project passed
+  15/15. Running two e2e suites at the same time on one host is unsafe; the fixed project name now
+  makes that visible.
+- Round-1 observations are resolved: the dev compose comment, the e2e project name and the gitignore
+  re-includes. The root `.gitignore` row in the Files table is now explained in the fixes section.
+
+## Fixes after QA round 2
+- B3: `docs/configuration.md` documents `PROJECT_NAME` default `nexus`, as the compose fallbacks.

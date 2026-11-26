@@ -26,7 +26,7 @@ in `$DATA_PATH/postgres`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PROJECT_NAME` | `app` | Compose project name (container and network names). |
+| `PROJECT_NAME` | `nexus` | Compose project name (container and network names). |
 | `APP_NAME` | `nexusHome` | Name shown in emails and the API title. |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING` or `ERROR`. App messages carry ids, never emails, names, codes or tokens; the access log records client address, method, path (without the query string) and status. |
 | `DOCKER_IMAGE` | — (required) | Image repository, e.g. `cibrandocampo/nexus-home`. |
