@@ -1,5 +1,6 @@
-# Weekly dependency update PRs: the platform (platform/) and the garage toolchain image. Backend requirements are pip-compiled
-# with hashes: when Dependabot bumps a requirements.in-pinned package, regenerate the lock files with
+# Weekly dependency update PRs: the platform (platform/) and the garage toolchain image. Backend
+# and simulator requirements are pip-compiled with hashes: when Dependabot bumps a requirements.in
+# package, regenerate the lock files with
 # `make lock` (in platform/) on that branch. Images used in several directories come in one PR (a
 # group spans the directories), so a version never lands in production without dev and the
 # end-to-end stack. A major Postgres bump needs the dump and restore in platform/docs/configuration.md
@@ -11,6 +12,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+
+  - package-ecosystem: pip
+    directory: /platform/simulator
+    schedule:
+      interval: weekly
 
   - package-ecosystem: npm
     directory: /platform/frontend
@@ -37,7 +43,7 @@ updates:
       interval: weekly
 
   - package-ecosystem: docker
-    directories: ["/platform", "/platform/dev", "/platform/e2e"]
+    directories: ["/platform", "/platform/dev", "/platform/e2e", "/platform/simulator"]
     schedule:
       interval: weekly
     groups:

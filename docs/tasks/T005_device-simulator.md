@@ -66,3 +66,29 @@ and that every error code in the README's error table is produced by some reques
 | `platform/simulator/**` | CREATE |
 | `platform/dev/docker-compose.yml`, `platform/e2e/docker-compose.yml`, `platform/.env.example`, `platform/Makefile` | MODIFY |
 | `.github/workflows/platform.yml` | MODIFY |
+
+## Implementation notes
+- Built on Starlette + uvicorn rather than FastAPI: a single dispatcher that routes like `http.cpp`
+  (`handle()`), so paths, methods, the order of checks (method → origin → token) and the error
+  envelope match the firmware, including its 404/405 answers, which a router would shape differently.
+- `sim/garage.py` is a port of `garage.cpp` (`tick()` at 100 Hz, run for the simulated time on each
+  request and every 50 ms); `sim/device.py` ports `http.cpp` / `settings.cpp` (identity, entities,
+  settings validation with the firmware's codes, token, restart). A physical `Opener` model stands in
+  for the single-button opener and the closed sensor; hooks under `/sim/` drive it (README).
+- Faithful quirks the tests pin: night is held back for the first 10 s after boot (lamp settle time from
+  `lightOffAt = 0`); `/door/stop` during a three-pulse reversal cancels the pending pulses but answers
+  409 because the last pulse was under 1.2 s ago.
+- Contract (`tests/test_contract.py`): the README's JSON examples (state, log, command answer, error),
+  event, source and reason names, and its error table; plus the keys `http.cpp` writes for `/info`,
+  `/state` and `/settings`, and the `/info` entity list. Exempt, with reasons in the test: `too_long`
+  (the firmware's JSON reader answers the field's own `invalid_*` first, so the API never returns it)
+  and the firmware-update 502 codes (phase 3). The Platform workflow now also runs on changes to the
+  garage README and `http.cpp`.
+- One dependency set (`requirements.in`, hash-pinned; dev-only tool): Starlette 1.10 deprecates `httpx`
+  in its test client, so the tests use `httpx2`.
+- Stacks: two simulators in the dev compose (tokens and speed in `.env.example`, documented in
+  `docs/configuration.md`), one in the e2e compose (`SIM_SPEED=10`, unused until phase 2).
+- Evidence: `tests.txt` 77 passed, 98 % coverage; `contract.txt` (a renamed README key in a scratch copy:
+  2 failed; the real README: 11 passed); `session.txt` (scripted curl session at `SIM_SPEED=10` from the
+  dev network: open → open after 22 s, close, stop part way (`stopped: down`), `door_busy`, light 600 s,
+  settings change, 401, restart → `reset_reason: software`, settings kept).

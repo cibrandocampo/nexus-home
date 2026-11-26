@@ -96,6 +96,16 @@ in `$DATA_PATH/postgres`.
 | `ADMIN_EMAIL` | empty | With `ADMIN_PASSWORD`, created as a password administrator at start-up when no admin exists. An existing user with this email is never changed. |
 | `ADMIN_PASSWORD` | empty | Its first password; it must follow the password rules (10+ characters, not only digits, not the email) or the app refuses to start. Change it after the first login. Both empty: no administrator is created. |
 
+### Device simulators (development only)
+
+Read by `dev/docker-compose.yml` for its two simulated garage boards; production ignores them.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SIM_GARAGE_A_TOKEN` | `sim-garage-a-token` | Access token of `sim-garage-a` (`garage-5e1a0a`). |
+| `SIM_GARAGE_B_TOKEN` | `sim-garage-b-token` | Access token of `sim-garage-b` (`garage-5e1a0b`). |
+| `SIM_SPEED` | `1` | Simulated seconds per real second (door travel, timers). |
+
 ## HTTPS behind a reverse proxy
 
 The app speaks plain HTTP on `APP_PORT`; HTTPS is the reverse proxy's job (on Synology: Control Panel →

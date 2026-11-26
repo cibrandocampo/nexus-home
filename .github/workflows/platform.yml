@@ -7,13 +7,23 @@ name: Platform
 # DOCKERHUB_TOKEN secrets (and the DOCKER_IMAGE variable): `latest` from main, `<version>` and
 # `stable` from a published platform release. Without them it is built (amd64) and not pushed.
 
+# The simulator's contract is the garage README and firmware/http.cpp: a change to the garage API must
+# re-run its contract test, hence those two paths.
 on:
   push:
     branches: [main]
-    paths: [platform/**, .github/workflows/platform.yml]
+    paths:
+      - platform/**
+      - .github/workflows/platform.yml
+      - devices/garage-iot-controller/README.md
+      - devices/garage-iot-controller/firmware/http.cpp
   pull_request:
     branches: [main]
-    paths: [platform/**, .github/workflows/platform.yml]
+    paths:
+      - platform/**
+      - .github/workflows/platform.yml
+      - devices/garage-iot-controller/README.md
+      - devices/garage-iot-controller/firmware/http.cpp
   release:
     types: [published]
 
@@ -93,6 +103,22 @@ jobs:
           npx -y prettier@3.10.1 --config frontend/.prettierrc.json --check
           'e2e/**/*.{js,json}' '!e2e/package-lock.json'
 
+  simulator:
+    name: Simulator
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'platform-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare the environment
+        run: |
+          cp .env.example .env
+          echo "HOST_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "HOST_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - name: Lint, format and tests with coverage (contract included)
+        run: make lint-simulator test-simulator
+
   audit:
     name: Dependency audit
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'platform-v')
@@ -115,7 +141,7 @@ jobs:
 
   e2e:
     name: End-to-end
-    needs: [backend, frontend]
+    needs: [backend, frontend, simulator]
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'platform-v')
     runs-on: ubuntu-latest
     steps:

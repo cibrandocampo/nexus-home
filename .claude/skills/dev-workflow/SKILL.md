@@ -65,6 +65,7 @@ platform/Dockerfile           production image (API + built SPA)
 platform/dev/                 dev compose (bind mounts, live reload) + Dockerfile.backend/.frontend
 platform/e2e/                 production image + Postgres + Mailpit + Playwright, specs
 platform/backend/ frontend/   the code
+platform/simulator/           garage board simulator for tests and the dev stack (its README)
 platform/.env(.example)       shared settings (.env is git-ignored); platform/docs/configuration.md
 ```
 
@@ -78,6 +79,7 @@ http://localhost:18025.
 | `backend` | 18000 | uvicorn `--reload`, migrations applied on start; `/api/docs` |
 | `db` | 15432 | Postgres 18; `app` (dev) and `app_test` (tests) databases |
 | `mailpit` | 18025 (UI), 11025 (SMTP) | every email of the dev stack |
+| `sim-garage-a`, `sim-garage-b` | — (port 80 inside the network) | simulated garage boards `garage-5e1a0a`, `garage-5e1a0b`; tokens `SIM_GARAGE_*_TOKEN`, speed `SIM_SPEED`; hooks under `/sim/` |
 
 | Target | Does |
 |---|---|
@@ -87,6 +89,7 @@ http://localhost:18025.
 | `make lint-backend` / `format-backend` | ruff check + format check / ruff format + safe fixes |
 | `make test-frontend` / `lint-frontend` / `format-frontend` / `build-frontend` | vitest with coverage / eslint + prettier check / prettier write / Vite build |
 | `make lint-e2e` | Prettier check of `e2e/` |
+| `make test-simulator` / `lint-simulator` / `format-simulator` | simulator tests with coverage (contract against the garage README and `http.cpp` included) / ruff / ruff format |
 | `make test` / `lint` / `qa` | all unit tests / all linters / both (what CI checks before e2e) |
 | `make e2e` | end-to-end suite against the production image; report in `e2e/artifacts/report` |
 | `make db-migrate` / `db-revision m="…"` | apply migrations / autogenerate one (read and fix it before committing) |

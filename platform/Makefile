@@ -2,6 +2,9 @@
 DC      := docker compose --env-file .env -f dev/docker-compose.yml
 BACKEND := $(DC) exec -T backend
 FRONTEND := $(DC) exec -T frontend
+# Simulator tests: its code bind-mounted, and the garage README and firmware (its contract) read-only.
+SIM     := $(DC) run --rm --no-deps -u $(HOST_UID):$(HOST_GID) -v "$(CURDIR)/simulator:/sim" \
+           -v "$(CURDIR)/../devices/garage-iot-controller:/contract:ro" sim-garage-a
 PY_IMG  := python:3.14-slim
 # Production stack (docker-compose.yml) and the image `make build` produces.
 PROD    := docker compose --env-file .env -f docker-compose.yml
@@ -14,7 +17,8 @@ export HOST_GID := $(shell id -g)
 
 .PHONY: help init dev-up dev-down dev-logs dev-ps lock db-migrate db-revision \
         test-backend coverage-backend lint-backend format-backend \
-        test-frontend lint-frontend format-frontend build-frontend test lint \
+        test-frontend lint-frontend format-frontend build-frontend \
+        test-simulator lint-simulator format-simulator test lint \
         build up down logs pull qa e2e lint-e2e
 
 help: ## List targets
@@ -36,12 +40,16 @@ dev-logs: ## Follow the dev stack logs
 dev-ps: ## Show the dev services
 	$(DC) ps
 
-lock: ## Recompile backend requirements with hashes
+lock: ## Recompile backend and simulator requirements with hashes
 	docker run --rm -v "$(CURDIR)/backend:/app" -w /app $(PY_IMG) sh -c "\
 	  pip install -q --root-user-action=ignore pip-tools && \
 	  pip-compile -q --generate-hashes --strip-extras --allow-unsafe -o requirements.txt requirements.in && \
 	  pip-compile -q --generate-hashes --strip-extras --allow-unsafe -o requirements-dev.txt requirements-dev.in && \
 	  chown $(HOST_UID):$(HOST_GID) requirements.txt requirements-dev.txt"
+	docker run --rm -v "$(CURDIR)/simulator:/app" -w /app $(PY_IMG) sh -c "\
+	  pip install -q --root-user-action=ignore pip-tools && \
+	  pip-compile -q --generate-hashes --strip-extras --allow-unsafe -o requirements.txt requirements.in && \
+	  chown $(HOST_UID):$(HOST_GID) requirements.txt"
 
 db-migrate: ## Apply migrations to the dev database
 	$(BACKEND) alembic upgrade head
@@ -73,14 +81,23 @@ format-frontend: ## Format the frontend
 build-frontend: ## Production build of the frontend (checks it compiles)
 	$(FRONTEND) npm run build
 
-test: coverage-backend test-frontend ## All unit tests
+test-simulator: ## Simulator tests with coverage, contract included (fails under the threshold)
+	$(SIM) sh -c "coverage run -m pytest -q && coverage report"
+
+lint-simulator: ## Simulator lint and format check
+	$(SIM) sh -c "ruff check . && ruff format --check ."
+
+format-simulator: ## Format the simulator and apply safe lint fixes
+	$(SIM) sh -c "ruff format . && ruff check --fix ."
+
+test: coverage-backend test-frontend test-simulator ## All unit tests
 
 lint-e2e: ## Format check of the end-to-end specs (frontend Prettier config)
 	docker run --rm -u $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e NPM_CONFIG_UPDATE_NOTIFIER=false \
 	  -v "$(CURDIR):/repo" -w /repo node:26-alpine \
 	  npx -y prettier@3.10.1 --config frontend/.prettierrc.json --check 'e2e/**/*.{js,json}' '!e2e/package-lock.json'
 
-lint: lint-backend lint-frontend lint-e2e ## All linters
+lint: lint-backend lint-frontend lint-simulator lint-e2e ## All linters
 
 qa: lint test ## Everything CI checks: linters and unit tests
 

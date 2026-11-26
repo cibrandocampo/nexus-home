@@ -61,6 +61,20 @@ services:
       mailpit:
         condition: service_healthy
 
+  # A simulated garage board (platform/simulator), for the device specs (platform phase 2).
+  sim-garage:
+    build: ../simulator
+    environment:
+      SIM_ID: garage-e2e001
+      SIM_NAME: E2E Garage
+      SIM_TOKEN: e2e-sim-token
+      SIM_SPEED: "10"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost/api/v1/info')"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   playwright:
     build:
       context: .

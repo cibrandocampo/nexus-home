@@ -14,15 +14,16 @@ stay in sync. The garage firmware has its own workflow (`ci.yml`).
 
 ## `platform.yml`
 
-Runs on PRs to main and pushes to main **that touch `platform/**` or the workflow** (GitHub evaluates a
+Runs on PRs to main and pushes to main **that touch `platform/**`, the workflow, or the garage README or
+`firmware/http.cpp`** (the simulator's contract; GitHub evaluates a
 PR's paths on its whole diff), and on published releases. Every job carries
 `if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'platform-v')`:
 `paths` does not apply to releases, and firmware releases (`garage-v…`) must not build the platform.
 
 ```
-backend ──┐
-          ├──► e2e ──► image
-frontend ─┘
+backend ───┐
+frontend ──┼──► e2e ──► image
+simulator ─┘
 audit (advisory, continue-on-error)
 ```
 
@@ -30,6 +31,7 @@ audit (advisory, continue-on-error)
 |---|---|---|
 | `backend` | builds the dev backend; `ruff check` + `ruff format --check`; pytest with coverage against Postgres + Mailpit | `make lint-backend coverage-backend` |
 | `frontend` | eslint, prettier, vitest with coverage, production build; Prettier check of `e2e/` | `make lint-frontend test-frontend build-frontend lint-e2e` |
+| `simulator` | ruff, pytest with coverage of `simulator/` (contract test against the mounted garage README and `http.cpp`) | `make lint-simulator test-simulator` |
 | `audit` | `pip-audit` on `requirements.txt`, `npm audit --omit=dev --audit-level=high`; never blocks | — |
 | `e2e` | starts the production `db` from `docker-compose.yml` with data on disk; `make e2e`; uploads `platform/e2e/artifacts/` on failure (14 days) | `make e2e` |
 | `image` | buildx of `platform/` with `APP_VERSION` = `git describe --match 'platform-v*'` without the prefix; push or build only (below) | `make build` |
@@ -60,9 +62,9 @@ Pushes only when **all** hold: secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN
   the published tags. Skips without credentials or without a platform release.
 - `platform-disposable-domains.yml` (Sundays, manual too): refreshes
   `platform/backend/app/auth/disposable/disposable_email_domains.txt` and opens a PR when it changed.
-- `.github/dependabot.yml`: weekly PRs for pip (`/platform/backend`; then run `make lock` on the branch:
+- `.github/dependabot.yml`: weekly PRs for pip (`/platform/backend`, `/platform/simulator`; then run `make lock` on the branch:
   requirements are hashed), npm (`/platform/frontend`, `/platform/e2e`), Docker and compose images (one
-  grouped PR across `/platform`, `/platform/dev`, `/platform/e2e`) and actions; ESLint majors are held
+  grouped PR across `/platform`, `/platform/dev`, `/platform/e2e`; Dockerfiles also `/platform/simulator`) and actions; ESLint majors are held
   until eslint-plugin-jsx-a11y supports them. Bump the Playwright image in `e2e/Dockerfile` together with
   `@playwright/test`.
 

@@ -89,6 +89,30 @@ services:
       timeout: 3s
       retries: 20
 
+  # Two simulated garage boards (platform/simulator): the backend reaches them by name on port 80, as
+  # it reaches real boards by IP. Test hooks under /sim/ (see simulator/README.md).
+  sim-garage-a:
+    build: ../simulator
+    environment: &sim
+      SIM_ID: garage-5e1a0a
+      SIM_NAME: Garage A
+      SIM_TOKEN: ${SIM_GARAGE_A_TOKEN:-sim-garage-a-token}
+      SIM_SPEED: ${SIM_SPEED:-1}
+    healthcheck: &sim-health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost/api/v1/info')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  sim-garage-b:
+    build: ../simulator
+    environment:
+      <<: *sim
+      SIM_ID: garage-5e1a0b
+      SIM_NAME: Garage B
+      SIM_TOKEN: ${SIM_GARAGE_B_TOKEN:-sim-garage-b-token}
+    healthcheck: *sim-health
+
 volumes:
   postgres-data:
   frontend-node-modules:
