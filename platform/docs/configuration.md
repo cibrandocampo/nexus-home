@@ -27,7 +27,7 @@ in `$DATA_PATH/postgres`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `PROJECT_NAME` | `app` | Compose project name (container and network names). |
-| `APP_NAME` | `App` | Name shown in emails and the API title. |
+| `APP_NAME` | `nexusHome` | Name shown in emails and the API title. |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING` or `ERROR`. App messages carry ids, never emails, names, codes or tokens; the access log records client address, method, path (without the query string) and status. |
 | `DOCKER_IMAGE` | — (required) | Image repository, e.g. `cibrandocampo/nexus-home`. |
 | `APP_TAG` | `stable` | Image tag: `stable`, `latest`, a version (`1.2.0`) or `local` (`make build`). |
@@ -62,7 +62,7 @@ in `$DATA_PATH/postgres`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `SITE_URL` | `http://localhost:15173` | Public address of the app, used in email links. |
-| `EMAIL_FROM` | `App <no-reply@example.com>` | Sender of every email. |
+| `EMAIL_FROM` | `nexusHome <no-reply@example.com>` | Sender of every email. |
 | `SMTP_HOST`, `SMTP_PORT` | `localhost`, `587` | SMTP server. |
 | `SMTP_USER`, `SMTP_PASSWORD` | empty | SMTP credentials (empty: no authentication). |
 | `SMTP_TLS` | `starttls` | `none`, `starttls` or `ssl`. |

@@ -2,7 +2,7 @@
 # Settings come from .env (copy .env.example); every variable is described in docs/configuration.md.
 # For development use dev/docker-compose.yml (`make dev-up`).
 
-name: ${PROJECT_NAME:-app}
+name: ${PROJECT_NAME:-nexus}
 
 services:
   app:

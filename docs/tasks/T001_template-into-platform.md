@@ -78,3 +78,59 @@ the same compose commands the targets run and say so in the evidence.
   the brand link "nexusHome". Now `exact: true`. The same latent issue is in the template (any app
   name containing "Home"): port it back.
 - `make` is not installed on the host: every check ran the targets' compose commands directly.
+
+## QA — RETURNED (round 1)
+
+**Date**: 2026-11-26
+
+Reviewed `platform/` as committed in `6e1df45`. HEAD moved to `f30fd2d` (T002, T003) during this QA;
+`git diff 6e1df45 HEAD -- platform` is empty, so the result applies to the T001 tree. `make` is not
+installed: every check ran the compose/docker commands of the matching Makefile target.
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 0a | Copy complete: `git archive af8fea9` vs `git ls-files platform` (467 template files, 290 in the documented non-copied paths, 177 copied + `TEMPLATE.md` = 178) | `docs/tasks/evidence/T001/qa/copy-diff.txt` | PASS |
+| 0b | Copy faithful: only 14 files differ, every hunk is a rename, the Makefile/e2e/`.gitignore` changes, or a comment (full diff) | `docs/tasks/evidence/T001/qa/content-diff.txt` | PASS |
+| 1 | Dev stack (`make init` commands): 4 services healthy; :15173 → 200, `<title>nexusHome</title>`; `POST /api/auth/login/verify` with `ADMIN_EMAIL`/`ADMIN_PASSWORD` → 200, access token and refresh cookie; wrong password → 400 | `docs/tasks/evidence/T001/qa/dev.txt` | PASS |
+| 2 | `make qa` commands: ruff, eslint + prettier, e2e prettier clean; backend 325 passed, 100 % (1135 stmts, 204 branches); frontend 128 passed in 11 files, thresholds met | `docs/tasks/evidence/T001/qa/qa.txt` | PASS |
+| 3 | `make e2e` commands: 15 passed, stack torn down (`down -v`) | `docs/tasks/evidence/T001/qa/e2e.txt` | PASS |
+| 4 | `make build` → `cibrandocampo/nexus-home:local` (user `app`, `app_name=nexusHome`); preflight and the image entrypoint refuse `.env.example` (`SECRET_KEY=change-me`, exit 1); a random key passes (control) | `docs/tasks/evidence/T001/qa/image.txt` | PASS |
+| 5 | Leftovers: `git status --short platform` empty; nothing generated tracked; DoD grep only finds `TEMPLATE.md` and `CHANGELOG.md` | `docs/tasks/evidence/T001/qa/leftovers.txt` | PASS |
+| 6 | Step 2 rename sweep for the template's placeholder names ("My App", default "App") | `docs/tasks/evidence/T001/qa/leftovers.txt` | FAIL |
+
+### Blockers
+- **B1**: `platform/.env.example:43` — Step 2 asks to rename "emails … that say the template's name";
+  found `EMAIL_FROM=My App <no-reply@example.com>` (the template's placeholder name), so every email from
+  a stack created with `make init` is sent as "My App" while `APP_NAME=nexusHome`. Expected
+  `EMAIL_FROM=nexusHome <no-reply@example.com>`. The DoD grep misses it (`myapp` does not match `My App`).
+  Evidence: `leftovers.txt`, "Step 2 rename sweep".
+- **B2**: `platform/backend/app/core/config.py:13` changed the `app_name` default to `nexusHome`, but
+  `platform/docs/configuration.md:30` still documents the default as `App`; the sender default kept the
+  old name in code and docs (`config.py:37` `email_from = "App <no-reply@example.com>"`,
+  `configuration.md:65`). Expected: the documented defaults match the code, and the `email_from` default
+  uses the same name as `app_name` (`nexusHome <no-reply@example.com>`) in both places. Evidence:
+  `content-diff.txt` (config.py hunk; no configuration.md hunk for line 30) and `leftovers.txt`.
+
+### Observations (non-blocking)
+- `platform/dev/docker-compose.yml:3` comment change is not listed in the implementation notes; and
+  line 2 still says the Makefile passes `--env-file .env` "from the repository root" (now `platform/`).
+- The Files table says root `.gitignore` MODIFY; it was left unchanged in favour of the nested
+  `platform/.gitignore` (documented in the notes). Works: no tracked platform file matches an ignore rule.
+  Note that the root Python ignore (`lib/`, `env/`, `build/`, `dist/`, `var/`) also applies under
+  `platform/`: a future `platform/frontend/src/lib/` would be silently ignored (`git check-ignore` shows
+  it); the template has the same `build/`/`lib/`-style risk.
+- The e2e compose project is named `app-e2e` (the template default): running this suite and the
+  template's at the same time on one host would collide.
+- `copy-diff.txt` "gained +x" line is an artefact of the scratch extraction; git modes match (annotated).
+
+## Fixes after QA round 1
+- B1: `.env.example` `EMAIL_FROM=nexusHome <no-reply@example.com>`.
+- B2: `config.py` `email_from` default and `docs/configuration.md` (`APP_NAME`, `EMAIL_FROM` defaults) say
+  nexusHome, matching the code.
+- Observations: the compose fallbacks are `${PROJECT_NAME:-nexus}` (production, dev, e2e: the suite's
+  project is now `nexus-e2e`, no clash with the template's `app-e2e`); the dev compose comment says
+  `--env-file .env` from `platform/`; `platform/.gitignore` re-includes the generic folder names the
+  root Python ignore file excludes (`lib/`, `env/`, `var/`…; `git check-ignore` shows
+  `platform/frontend/src/lib/x.js` tracked, `node_modules/`, `dist/`, `build/` still ignored); the
+  Files table's root `.gitignore` row is superseded by the nested file (see the notes above).
+- Re-checked: backend 100 % coverage, e2e suite with no failures.

@@ -1,8 +1,8 @@
 # Development stack: local builds, bind mounts, live reload.
-# Run through the Makefile (`make dev-up`), which passes --env-file .env from the repository root.
+# Run through the Makefile (`make dev-up`), which passes --env-file .env from platform/.
 # Host ports are prefixed with 1 (dev-workflow skill: dev ports 1xxxx).
 
-name: ${PROJECT_NAME:-app}-dev
+name: ${PROJECT_NAME:-nexus}-dev
 
 services:
   db:

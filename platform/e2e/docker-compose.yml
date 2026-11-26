@@ -2,7 +2,7 @@
 # Mailpit for the sign-in codes and the Playwright runner. Run with `make e2e`, which tears it all
 # down afterwards. Nothing here is for deployment: the secrets are fixed test values.
 
-name: ${PROJECT_NAME:-app}-e2e
+name: ${PROJECT_NAME:-nexus}-e2e
 
 x-admin: &admin
   ADMIN_EMAIL: admin@example.com

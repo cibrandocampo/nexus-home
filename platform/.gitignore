@@ -41,3 +41,16 @@ data/
 *.swo
 .DS_Store
 Thumbs.db
+
+# The repository's root .gitignore (GitHub's Python template) ignores generic directory names such
+# as lib/ or env/ everywhere; source folders of the platform with those names must not vanish.
+!lib/
+!lib64/
+!env/
+!var/
+!parts/
+!share/
+!target/
+!downloads/
+!instance/
+!cover/

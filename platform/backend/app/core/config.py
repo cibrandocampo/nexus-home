@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     # Email
     email_backend: Literal["smtp", "memory"] = "smtp"
-    email_from: str = "App <no-reply@example.com>"
+    email_from: str = "nexusHome <no-reply@example.com>"
     smtp_host: str = "localhost"
     smtp_port: int = 587
     smtp_user: str | None = None
