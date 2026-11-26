@@ -43,8 +43,10 @@ make shell                          # a shell in the image
 | Bench | `garage-33ad84` | `http://10.1.3.114/` (DHCP), `/dev/ttyACM0` | Free: flash, door commands, settings |
 
 `make update` does not work from Claude's sandboxed shell (the board cannot reach the script's
-temporary HTTP server: `server_unreachable`). The user runs it with `! make update ip=<ip>`; the
-bench board can also be flashed over USB (`make upload`).
+temporary HTTP server: `server_unreachable`). The user runs it from a terminal (`make update ip=<ip>`
+asks for the token), or with `! GARAGE_TOKEN="$(cat <token file>)" make update ip=<ip>` from the
+assistant's prompt, which has no terminal to ask in; the bench board can also be flashed over USB
+(`make upload`).
 
 The bench board has nothing wired; A0 floats (~200). Jumper tables are in the garage `NEXT_SESSION.md`.
 

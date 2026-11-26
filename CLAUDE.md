@@ -1,7 +1,8 @@
 # nexusHome — Claude Code instructions
 
-Home automation hub: WiFi device controllers (`devices/`, Arduino) and a platform (`platform/`, to be
-built) that manages them and integrates them with Home Assistant. See `README.md`.
+Home automation hub: WiFi device controllers (`devices/`, Arduino) and a platform (`platform/`, FastAPI +
+React, built in phases: `docs/plans/platform-middleware.md`) that manages them and, later, integrates them
+with Home Assistant. See `README.md`.
 
 ## Language
 

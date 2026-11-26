@@ -8,7 +8,7 @@ The project is structured in two main blocks:
 
 ### 1. Web Platform
 A centralized web application for managing all IoT devices:
-- **Middleware** (`platform/`, FastAPI + PostgreSQL + React, in Docker): finds and registers the WiFi devices, keeps their state and history, sends commands, changes settings and updates firmware; Home Assistant integration comes later. See [platform/README.md](platform/README.md).
+- **Middleware** (`platform/`, FastAPI + PostgreSQL + React, in Docker), built in phases: sign-in, users and roles are in place (phase 1); registering the WiFi devices, their state, history, commands and settings come in phase 2, firmware updates in phase 3, Home Assistant integration later. See [platform/README.md](platform/README.md).
 - **Purpose**: Provides a unified interface to monitor, control, and configure all connected IoT devices
 
 ### 2. Arduino Device Controllers
@@ -69,7 +69,7 @@ See [devices/sound-system/README.md](devices/sound-system/README.md) for detaile
 ### Prerequisites
 - Docker with Compose, `make` and `git`: the platform and its tools run in containers
   ([platform/README.md](platform/README.md))
-- Arduino IDE or `arduino-cli` (for device controllers)
+- For device controllers: the firmware toolchain runs in Docker too (`make help` in the device folder); the Arduino IDE also works
 
 ### Adding a New Device
 

@@ -1,4 +1,4 @@
-# Weekly dependency update PRs for the platform (platform/). Backend requirements are pip-compiled
+# Weekly dependency update PRs: the platform (platform/) and the garage toolchain image. Backend requirements are pip-compiled
 # with hashes: when Dependabot bumps a requirements.in-pinned package, regenerate the lock files with
 # `make lock` (in platform/) on that branch. Images used in several directories come in one PR (a
 # group spans the directories), so a version never lands in production without dev and the
@@ -54,5 +54,12 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    schedule:
+      interval: weekly
+
+  # The garage firmware toolchain image (Debian base). arduino-cli and the board core are pinned in
+  # the Dockerfile's build arguments and are bumped by hand with the firmware.
+  - package-ecosystem: docker
+    directory: /devices/garage-iot-controller/docker
     schedule:
       interval: weekly

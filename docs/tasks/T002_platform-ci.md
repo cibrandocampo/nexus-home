@@ -75,3 +75,26 @@ New `.github/workflows/platform.yml`, adapted from the template's `ci.yml` (`af8
 - DoD 2 adjusted: GitHub evaluates `paths` of a PR on its whole diff, and this PR touches both areas, so
   both workflows run here. The filters are checked by review; the first platform-only or devices-only
   PR after the merge confirms them.
+
+## QA — APPROVED (round 1)
+
+**Date**: 2026-11-26
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 1 | actionlint (Docker) on the 4 workflows: 0 errors | `docs/tasks/evidence/T002/qa/actionlint.txt` | PASS |
+| 2 | Platform and CI runs on the PR: both green at f7f9887 (Platform 45867281226: backend, frontend, audit, e2e, image; CI 45867283541). Path filters checked by review (adjustment justified: a `pull_request` run evaluates `paths` over the whole PR diff, and every push of this PR, even the NOTES.md-only ec437e5, started both workflows, as expected) | `docs/tasks/evidence/T002/qa/runs.txt`, `review.txt` | PASS |
+| 3 | Image job on the PR: `CAN_PUSH: false`, `PUSH_EVENT: false`, `push: false`, amd64 only, tag `nexus-home:pr-6`, no login or QEMU | `docs/tasks/evidence/T002/qa/image.txt` | PASS |
+| 4 | Tag logic: metadata-action `type=match` emulated (JS RegExp, group 1) plus the job guard, and a `sed -E` run: `platform-v1.2.0` → `1.2.0` + `stable`; `platform-v1.2.0-rc.1` (prerelease) → `1.2.0-rc.1`; `garage-v2.0.5` and `v1.0.0` → jobs skipped | `docs/tasks/evidence/T002/qa/tags.txt` | PASS |
+| 5 | Review against template af8fea9: only the intended changes (paths, guard on all 5 jobs, working-directory, context, report path, describe `--match`, `type=match`); weekly rebuild picks `platform-v` releases only; domain sync path; Dependabot directories all exist under `/platform` | `docs/tasks/evidence/T002/qa/review.txt` | PASS |
+
+### Observations (non-blocking)
+- The implementer saved no T002 evidence (`docs/tasks/evidence/T002/` was missing); the notes cite `tags.txt`.
+- `platform/backend/app/auth/disposable/disposable_email_domains.txt:3` still names
+  `sync-disposable-email-domains.yml` in its header. The first sync rewrites it.
+- Weekly rebuild: `stable` is the most recently *created* `platform-v` release, not the highest version.
+  The two differ only if a patch to an older line is released later.
+- A malformed tag such as `platform-v1.2` passes the guard but matches no version, so a non-prerelease
+  release would push only `stable`.
+- Dependabot does not cover `devices/garage-iot-controller/docker/Dockerfile` (T004). Add a docker entry
+  if base-image bumps are wanted there.

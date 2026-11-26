@@ -77,3 +77,60 @@ The scripts stay runnable inside the image; `tools/build.sh` no longer needs the
 - DoD 4 and 5 wait for the user: the bench board is not plugged in (`/dev/ttyACM0` absent) and does not
   answer at 10.1.3.114. Run `! make upload` with the board on USB, then `! make update ip=<bench ip>`.
 - `grep.txt`: no current mention of the snap, `bossac` or host toolchain.
+
+## QA — RETURNED (round 1)
+
+**Date**: 2026-11-26
+
+`make` is not installed on this host, so each target's recipe was taken from `make -n` inside the image
+and run from the host with the same `docker run` line. The run used a clean `git archive HEAD` copy of
+the device folder, so the shipped `dist/garage-2.0.5.bin` was not overwritten.
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 0 | Image builds from scratch (`--no-cache`): arduino-cli 1.6.0 checksum OK, core renesas_uno 1.6.0, g++ 14.2, Python 3.13.5, make 4.4.1 | `docs/tasks/evidence/T004/qa/image-build.txt` | PASS |
+| 0b | `make help` and `make -n` for every target; argument guards (`ota`/`update` without args, missing port) exit 2 with usage | `docs/tasks/evidence/T004/qa/make-dryrun.txt` | PASS |
+| 1 | `make test` recipe: all tests passed | `docs/tasks/evidence/T004/qa/test.txt` | PASS |
+| 2 | `make build` recipe: `dist/garage-2.0.5.bin` 114 084 bytes, against 114 108 for the host-built one (0.021 %). The host-built file still matches, byte for byte, the payload of the Nov 24 `.ota`. CI gives the same 114 084 | `docs/tasks/evidence/T004/qa/build.txt` | PASS |
+| 3 | `make ota version=2.0.5` recipe: `.ota` written (84 953 bytes); an independent decode gives back the exact `.bin` (length, CRC and magic OK) | `docs/tasks/evidence/T004/qa/ota.txt` | PASS |
+| 4 | USB upload to the bench board | — | NEEDS USER |
+| 5 | Network update | `docs/tasks/evidence/T004/qa/it-without-tty.txt` | NEEDS USER (see B1) |
+| 6 | CI garage job at f7f9887: image built with the GHA cache (scope `garage-toolchain`), `make build IMAGE_BUILT=1` passed | `docs/tasks/evidence/T004/qa/ci.txt` | PASS |
+| 7 | grep: the only hits for snap/bossac are in NOTES.md, marked superseded; the rest are CSS scroll-snap and "snapshot" | `docs/tasks/evidence/T004/qa/grep.txt` | PASS |
+
+### Blockers
+- **B1**: `devices/garage-iot-controller/Makefile:38`: `make update` always passes `-it`. Docker refuses
+  that when stdin is not a terminal ("cannot attach stdin to a TTY-enabled container because stdin is
+  not a terminal", exit 1, `it-without-tty.txt`). The documented way to run DoD 5 is `! make update
+  ip=…` (`.claude/skills/dev-workflow/SKILL.md:46`, and this task's notes), and Claude Code's `!`
+  commands run without a terminal, so that path fails before `update.sh` starts. Expected: `-i`, plus `-t`
+  only when stdin is a terminal (for example `$(shell [ -t 0 ] && echo -t)`), so a set `GARAGE_TOKEN`
+  works without a TTY. The token prompt (`stty -echo`) can stay for terminal use. Alternatively, change
+  the docs to say a real terminal is required.
+
+### NEEDS USER
+- `make` is not installed on the host (`command -v make` → not found). CLAUDE.md, the README and the
+  Makefile header all treat `make` as a host tool, so install it (`sudo apt install make`) before DoD 4–5.
+- DoD 4: `make upload` with the bench board (`garage-33ad84`) on `/dev/ttyACM0`, then `/api/v1/info`.
+- DoD 5: `make update ip=<bench ip>` (after B1, or from a real terminal).
+
+### Observations (non-blocking)
+- The Dockerfile has no `USER`, so the image's default user is root. Every Makefile target and CI pass
+  `-u <uid>:<gid>`, which meets "non-root user" in practice; the notes could say so.
+- `debian:trixie-slim` is not pinned by digest and the apt packages float. The binary is reproducible
+  today (QA and CI both give 114 084 bytes), but a base-image refresh can change it.
+- `README.md:72` (root) still lists "Arduino IDE or `arduino-cli`" as prerequisites for the device
+  controllers. After this task only Docker, `make` and `git` are needed.
+- The implementer's `build.txt` shows a `2.0.5-docker-check` build of 114 108 bytes. The 114 084 figure
+  in the notes is not in that file; QA reproduced it. `dist/garage-2.0.5.bin` has an mtime of today
+  (18:21) but its bytes are unchanged.
+- `make upload` passes only `/dev/ttyACM0` (`--device`). If the board re-enumerated under another node
+  during upload, the container could not see it. The UNO R4 WiFi's bridge normally keeps the node; DoD 4
+  will show whether it does.
+
+## Fixes after QA round 1
+- B1: `make update` and `make shell` pass `-t` only when stdin is a terminal (`TTY`); checked with
+  `make -n` inside the image without and with a terminal (`-i` vs `-i -t`). Without a terminal the token
+  must come from `GARAGE_TOKEN` (dev-workflow says how to run it from the assistant's prompt).
+- Observations: Dependabot watches the toolchain's Debian base; the root README prerequisites point to
+  the Docker toolchain; the platform's disposable-domain list header names its new workflow.

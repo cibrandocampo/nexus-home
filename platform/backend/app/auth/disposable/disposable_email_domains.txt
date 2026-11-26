@@ -1,6 +1,6 @@
 # Disposable email domains, synced weekly from
 # https://github.com/disposable-email-domains/disposable-email-domains
-# by .github/workflows/sync-disposable-email-domains.yml. Do not edit: add domains to
+# by .github/workflows/platform-disposable-domains.yml. Do not edit: add domains to
 # disposable_email_domains.local.txt instead.
 0-mail.com
 0-mailer.dynv6.net

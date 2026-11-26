@@ -4,6 +4,7 @@
 IMAGE   := nexus-garage-toolchain
 RUN     := docker run --rm -u $(shell id -u):$(shell id -g) -v "$(CURDIR):/work" -w /work
 FQBN    := arduino:renesas_uno:unor4wifi
+TTY     := $(shell test -t 0 && echo -t)
 port    ?= /dev/ttyACM0
 version ?=
 
@@ -33,13 +34,14 @@ upload: image ## Compile and flash over USB (port=/dev/ttyACM0, flags=-D… for 
 	         arduino-cli upload --fqbn $(FQBN) -p $(port) --input-dir build/upload firmware; s=$$?; \
 	         rm -rf build/upload; exit $$s'
 
-update: image ## Network update (ip= required, version= optional); token from GARAGE_TOKEN or asked for
+update: image ## Network update (ip= required, version= optional); token from GARAGE_TOKEN, asked for only in a terminal
 	@test -n "$(ip)" || { echo "usage: make update ip=<controller-ip> [version=x.y.z]" >&2; exit 2; }
-	$(RUN) -it --network host -e GARAGE_TOKEN -e OTA_PORT $(IMAGE) tools/update.sh $(ip) $(version)
+	@# -t only with a terminal: Docker refuses it otherwise (e.g. from an assistant's shell).
+	$(RUN) -i $(TTY) --network host -e GARAGE_TOKEN -e OTA_PORT $(IMAGE) tools/update.sh $(ip) $(version)
 
 smoke: image ## Read-only checks against a running board (ip= required; token from GARAGE_TOKEN)
 	@test -n "$(ip)" || { echo "usage: make smoke ip=<controller-ip>" >&2; exit 2; }
 	$(RUN) --network host -e GARAGE_TOKEN $(IMAGE) sh -c 'test/api_smoke.sh $(ip) "$$GARAGE_TOKEN"'
 
 shell: image ## A shell in the toolchain image
-	$(RUN) -it $(IMAGE) bash
+	$(RUN) -i $(TTY) $(IMAGE) bash
