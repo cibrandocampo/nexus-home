@@ -173,3 +173,25 @@ QA round 1"). The checks the change touches were re-run; frontend code is unchan
 
 ## Fixes after QA round 2
 - B3: `docs/configuration.md` documents `PROJECT_NAME` default `nexus`, as the compose fallbacks.
+
+## QA — APPROVED (round 3)
+
+**Date**: 2026-11-26
+
+Reviewed fix commit `f7f9887` (in `platform/`, only `docs/configuration.md`, one line). Nothing the test
+suites or the e2e suite cover changed, so neither was re-run; round 2's results stand (backend 100 %,
+e2e 15/15).
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| B3 | `configuration.md:29` `PROJECT_NAME` default `nexus`, matching the three compose fallbacks | `docs/tasks/evidence/T001/qa/round3/defaults.txt` | PASS |
+| 1 | Mechanical comparison of every documented default against the `Settings` defaults in `config.py` (read with `ast`), `.env.example`, and the compose fallbacks and overrides (all 3 files). 0 drift: every Settings field and every `.env.example` variable is documented. The one non-equal row, `DATABASE_URL`, is documented as built by compose, which is what the compose files do. | `docs/tasks/evidence/T001/qa/round3/defaults.txt` | PASS |
+| 2 | Rename sweep and DoD grep unchanged (only `TEMPLATE.md`, `CHANGELOG.md`); `git status platform` clean | `docs/tasks/evidence/T001/qa/round3/defaults.txt` | PASS |
+
+### Blockers
+None.
+
+### Observations (non-blocking)
+- `POSTGRES_USER` / `POSTGRES_DB` stay `app` (`.env.example`, `configuration.md:44,46`, the `config.py`
+  `DATABASE_URL` fallback): consistent everywhere, and Step 2 did not ask to rename them. Renaming them
+  to `nexus` later would need a fresh dev database volume.
