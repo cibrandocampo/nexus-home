@@ -8,7 +8,7 @@ The project is structured in two main blocks:
 
 ### 1. Web Platform
 A centralized web application for managing all IoT devices:
-- **Middleware**: manages the WiFi devices and integrates them with Home Assistant (stack to be decided)
+- **Middleware** (`platform/`, FastAPI + PostgreSQL + React, in Docker), built in phases: sign-in, users and roles are in place (phase 1); registering the WiFi devices, their state, history, commands and settings come in phase 2, firmware updates in phase 3, Home Assistant integration later. See [platform/README.md](platform/README.md).
 - **Purpose**: Provides a unified interface to monitor, control, and configure all connected IoT devices
 
 ### 2. Arduino Device Controllers
@@ -29,7 +29,7 @@ nexus-home/
 │   └── sound-system/          # Smart sound system controller
 │       ├── audio.ino          # Arduino source code
 │       └── README.md          # Device-specific documentation
-├── platform/                   # Web platform (to be implemented)
+├── platform/                   # Web platform (FastAPI + React, Docker)
 └── README.md                  # This file
 ```
 
@@ -67,9 +67,9 @@ See [devices/sound-system/README.md](devices/sound-system/README.md) for detaile
 ## Getting Started
 
 ### Prerequisites
-- Arduino IDE (for device controllers)
-- Python 3.x (for web platform, when implemented)
-- Node.js (for frontend, when implemented)
+- Docker with Compose, `make` and `git`: the platform and its tools run in containers
+  ([platform/README.md](platform/README.md))
+- For device controllers: the firmware toolchain runs in Docker too (`make help` in the device folder); the Arduino IDE also works
 
 ### Adding a New Device
 
@@ -82,15 +82,15 @@ See [devices/sound-system/README.md](devices/sound-system/README.md) for detaile
 
 Work is done with Claude Code following the workflow in [CLAUDE.md](CLAUDE.md): features are planned
 in `docs/plans/`, split into tasks in `docs/tasks/`, implemented with independent QA per task and
-delivered as one pull request per feature. CI (`.github/workflows/ci.yml`) runs the garage host tests
-and builds its firmware on every pull request.
+delivered as one pull request per feature (or per phase). CI runs the garage host tests and builds its
+firmware (`ci.yml`), and lints, tests and builds the platform (`platform.yml`).
 
 ## Future Development
 
-- [ ] Implement the platform (middleware for the WiFi devices + Home Assistant integration; stack to be decided)
+- [ ] Platform phases 2 (devices) and 3 (firmware updates), then Home Assistant integration ([plan](docs/plans/platform-middleware.md))
 - [ ] Add device discovery and registration system
 - [ ] Implement centralized device management dashboard
-- [ ] Add authentication and security features
+- [x] Authentication and roles (platform phase 1: sign-in by email code or password, users, roles)
 - [ ] Support for device scheduling and automation rules
 
 ## License

@@ -1,0 +1,14 @@
+# Development image: dependencies only; the code is bind-mounted from ../frontend and
+# node_modules lives in a named volume filled from this image.
+FROM node:26-alpine
+
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_FUND=false
+
+WORKDIR /app
+RUN chown node:node /app
+USER node
+COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+CMD ["npm", "run", "dev"]

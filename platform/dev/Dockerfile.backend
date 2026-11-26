@@ -1,0 +1,14 @@
+# Development image: dependencies only; the code is bind-mounted from ../backend.
+FROM python:3.14-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore \
+    HOME=/tmp
+
+WORKDIR /app
+COPY backend/requirements-dev.txt /tmp/requirements-dev.txt
+RUN pip install --no-cache-dir --require-hashes -r /tmp/requirements-dev.txt
+
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]

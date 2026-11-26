@@ -1,0 +1,115 @@
+/* Bottom navigation (nudge's mechanics, "expanding label" style). `--nav-h` (base.css) is the bar's
+   height; the page reserves it plus the safe area. */
+.nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--mantine-color-default-border);
+  /* Opaque: content scrolling underneath must not show through. */
+  background: var(--app-color-surface);
+}
+
+.list {
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 480px;
+  height: var(--nav-h);
+  margin: 0 auto;
+  padding: 0 12px;
+  list-style: none;
+}
+
+.tab {
+  /* Positioned so it paints above the sliding pill. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* 48 px touch target. */
+  min-width: 48px;
+  min-height: 48px;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--mantine-color-dimmed);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--mantine-font-size-sm);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    padding 200ms ease;
+}
+
+.tab:hover {
+  color: var(--mantine-color-text);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--mantine-color-anchor);
+  outline-offset: 2px;
+}
+
+.tab[data-current] {
+  anchor-name: --current-tab;
+  padding: 0 18px;
+  color: var(--app-color-on-filled);
+}
+
+/* The pill is one element tethered to the current tab. When the tab changes, BottomNav slides it
+   from the old tab to the new one in step with the labels folding and unfolding. Without anchor
+   support, the current tab paints its own pill. */
+.list::before {
+  content: '';
+  position: absolute;
+  position-anchor: --current-tab;
+  inset-block-start: anchor(top);
+  inset-block-end: anchor(bottom);
+  inset-inline-start: anchor(self-start);
+  inset-inline-end: anchor(self-end);
+  border-radius: 999px;
+  background: var(--mantine-primary-color-filled);
+}
+
+@supports not (anchor-name: --current-tab) {
+  .list::before {
+    content: none;
+  }
+
+  .tab[data-current] {
+    background: var(--mantine-primary-color-filled);
+  }
+}
+
+/* The label is always in the DOM (the tab's accessible name) and only shown on the current tab. */
+.label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width 200ms ease,
+    opacity 150ms ease;
+}
+
+.tab[data-current] .label {
+  max-width: 12rem;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab,
+  .label {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .tab[data-current] {
+    border: 2px solid CanvasText;
+  }
+}

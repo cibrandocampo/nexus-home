@@ -1,0 +1,9 @@
+# The simulator is a development and test tool (never deployed): one dependency set, runtime and
+# tests together. requirements.txt is compiled from this file with hashes: edit here, then run
+# `make lock` (in platform/).
+starlette~=1.10
+uvicorn~=0.54.0
+pytest~=9.2
+httpx2~=2.16
+coverage~=7.17
+ruff~=0.17.0

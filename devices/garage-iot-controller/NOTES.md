@@ -28,11 +28,12 @@ Rewrite the garage controller from scratch (Arduino UNO R4 WiFi, door + light bu
 
 - [x] `firmware/secrets.h` with WiFi credentials (git-ignored).
 - [x] `g++` installed.
-- [x] `arduino-cli:raw-usb` snap interface connected.
+- [x] `arduino-cli:raw-usb` snap interface connected (host snap, no longer used: see below).
 - [x] **Serial port permission.** `dialout` is active and `/dev/ttyACM0` is writable.
 - [x] **Upload tool was 32-bit.** The snap's i386 `bossac` was replaced with Arduino's 64-bit build of
       the same version (checksum verified against the package index). The original is kept next to it
-      as `bossac.i386.orig`. A core reinstall or update may bring the 32-bit one back.
+      as `bossac.i386.orig`. Superseded (2026-11-26): the toolchain now runs in Docker (`make help`),
+      with its own 64-bit tools; the host snap is no longer used.
 - [ ] Optional: add a passphrase to the SSH key (`ssh-keygen -p -f ~/.ssh/id_ed25519`, in a regular terminal).
 
 ## Board test results (2026-11-16)

@@ -1,0 +1,4 @@
+/* Long addresses wrap at any point instead of overflowing the column, but only when they must. */
+.email {
+  overflow-wrap: anywhere;
+}

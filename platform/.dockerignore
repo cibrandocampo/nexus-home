@@ -1,0 +1,14 @@
+# Only what the image needs reaches the build context.
+**
+!backend/requirements.txt
+# Used by dev/Dockerfile.backend (same build context); the production image does not copy it.
+!backend/requirements-dev.txt
+!backend/alembic.ini
+!backend/alembic/
+!backend/app/
+!backend/entrypoint.sh
+!frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+**/__pycache__/

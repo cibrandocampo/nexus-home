@@ -24,8 +24,8 @@ INDEX.md: the verdict, table and blockers go only in your final message.
 
 1. `docs/tasks/<id>*.md` in full, including any `## Execution evidence` and earlier verdicts.
 2. `CLAUDE.md`, and the skills that apply: `.claude/skills/test-discipline/SKILL.md` always,
-   `.claude/skills/firmware-patterns/SKILL.md` for `devices/`, `platform-patterns` for `platform/`
-   (if it exists), `.claude/skills/dev-workflow/SKILL.md` for commands. For web UI changes,
+   `.claude/skills/firmware-patterns/SKILL.md` for `devices/`, the `platform-*` skills for `platform/`
+   (`platform-architecture` first, then the ones the change touches), `.claude/skills/dev-workflow/SKILL.md` for commands. For web UI changes,
    check them against the matching `modern-web-guidance` guides; for security-relevant changes, review
    them with `security-audit` in guidance mode (its boundary-and-result evidence bar).
 3. `git status` and `git diff` (plus `git diff --cached`): the real change under review.

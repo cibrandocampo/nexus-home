@@ -1,0 +1,84 @@
+name: Platform weekly rebuild
+
+# Rebuilds the platform's published images without cache so they pick up base-image security fixes:
+# `latest` from main and `stable` (plus its version tag) from the latest platform release (tag
+# `platform-v<version>`; firmware releases are ignored). Needs the same DOCKERHUB_USERNAME /
+# DOCKERHUB_TOKEN secrets and DOCKER_IMAGE variable as the Platform workflow; skips without them.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: Rebuild ${{ matrix.channel }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [latest, stable]
+    env:
+      CAN_PUSH: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' && vars.DOCKER_IMAGE != '' }}
+      IMAGE: ${{ vars.DOCKER_IMAGE }}
+      CHANNEL: ${{ matrix.channel }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Source
+        id: source
+        run: |
+          if [ "$CAN_PUSH" != "true" ]; then
+            echo "No Docker Hub credentials: nothing to rebuild."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif [ "$CHANNEL" = "latest" ]; then
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+            echo "tags=$IMAGE:latest" >> "$GITHUB_OUTPUT"
+          else
+            # Newest published, non-prerelease platform release; none yet is a normal skip, and an
+            # API error fails the job (set -e).
+            tag=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --exclude-drafts \
+              --exclude-pre-releases --json tagName,createdAt \
+              --jq '[.[] | select(.tagName | startswith("platform-v"))] | sort_by(.createdAt) | last | .tagName // ""')
+            if [ -z "$tag" ]; then
+              echo "No platform release yet: no stable image to rebuild."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "ref=$tag" >> "$GITHUB_OUTPUT"
+              echo "tags=$IMAGE:stable,$IMAGE:${tag#platform-v}" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.source.outputs.skip != 'true'
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Version
+        id: version
+        if: steps.source.outputs.skip != 'true'
+        run: echo "value=$(git describe --tags --match 'platform-v*' --always | sed 's/^platform-v//')" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v4
+        if: steps.source.outputs.skip != 'true'
+      - uses: docker/setup-buildx-action@v4
+        if: steps.source.outputs.skip != 'true'
+      - uses: docker/login-action@v4
+        if: steps.source.outputs.skip != 'true'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        if: steps.source.outputs.skip != 'true'
+        with:
+          context: platform
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          pull: true
+          build-args: APP_VERSION=${{ steps.version.outputs.value }}
+          tags: ${{ steps.source.outputs.tags }}

@@ -1,0 +1,56 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+dist/
+.next/
+.nuxt/
+
+# Coverage & tests
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.pytest_cache/
+e2e/artifacts/
+test-results/
+
+# Docker / data
+data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# The repository's root .gitignore (GitHub's Python template) ignores generic directory names such
+# as lib/ or env/ everywhere; source folders of the platform with those names must not vanish.
+!lib/
+!lib64/
+!env/
+!var/
+!parts/
+!share/
+!target/
+!downloads/
+!instance/
+!cover/

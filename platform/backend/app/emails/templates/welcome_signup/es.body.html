@@ -1,0 +1,7 @@
+{% extends "_layout.html" %}
+{% block content %}
+<p><strong>¡Te damos la bienvenida a {{ app_name }}!</strong></p>
+<p>Para confirmar tu correo y terminar de crear tu cuenta, introduce este código:</p>
+{% include "_code.html" %}
+<p>Es válido durante {{ minutes }} minuto{% if minutes != 1 %}s{% endif %}. Si no te has registrado, ignora este correo y no se activará ninguna cuenta.</p>
+{% endblock %}

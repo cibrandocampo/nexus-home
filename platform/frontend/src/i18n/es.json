@@ -1,0 +1,181 @@
+{
+  "app": {
+    "name": "nexusHome"
+  },
+  "nav": {
+    "home": "Inicio",
+    "label": "Principal",
+    "profile": "Perfil",
+    "users": "Usuarios"
+  },
+  "colorScheme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "auto": "Sistema"
+  },
+  "home": {
+    "title": "Bienvenida",
+    "text": "Empieza a construir tu proyecto desde aquí."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "text": "La página que buscas no existe.",
+    "back": "Ir a inicio"
+  },
+  "errors": {
+    "title": "Algo ha fallado",
+    "generic": "Error inesperado. Inténtalo de nuevo.",
+    "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo."
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "timezone": {
+    "label": "Zona horaria",
+    "nothingFound": "Ninguna zona horaria coincide.",
+    "search": "Buscar zona horaria",
+    "detected": "Tu navegador está en {{zone}}.",
+    "useDetected": "Usarla"
+  },
+  "user": {
+    "logout": "Cerrar sesión"
+  },
+  "login": {
+    "title": "Entrar",
+    "titleSignup": "Entra o crea una cuenta",
+    "emailHelp": "Escribe tu correo. Te pediremos tu contraseña o te enviaremos un código.",
+    "email": "Correo electrónico",
+    "continue": "Continuar",
+    "signIn": "Entrar",
+    "code": "Código",
+    "resend": "Enviar otro código",
+    "resendIn": "Otro código en {{seconds}} s",
+    "passwordFor": "Escribe la contraseña de",
+    "password": "Contraseña",
+    "changeEmail": "Usar otro correo",
+    "errors": {
+      "user_not_found": "No hay ninguna cuenta con este correo.",
+      "disposable_email": "No se admiten correos desechables. Usa tu correo habitual.",
+      "account_disabled": "Esta cuenta está desactivada. Contacta con una persona administradora.",
+      "invalid_credentials": "El código o la contraseña no son correctos.",
+      "method_mismatch": "Esta cuenta usa otro método para entrar. Vuelve atrás e inténtalo de nuevo.",
+      "locked": "Demasiados intentos fallidos. Vuelve a intentarlo en 15 minutos.",
+      "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo.",
+      "invalid_email": "Escribe un correo electrónico válido."
+    },
+    "codeDigit": "Cifra {{position}} de {{total}} del código",
+    "codeSentTo": "Te hemos enviado un código de 6 cifras a",
+    "codeValid": "Es válido durante 10 minutos."
+  },
+  "welcome": {
+    "title": "¡Te damos la bienvenida!",
+    "text": "Dinos tu nombre para terminar de preparar tu cuenta.",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "save": "Continuar",
+    "required": "Obligatorio"
+  },
+  "waiting": {
+    "title": "Esperando acceso",
+    "text": "Tu cuenta {{email}} está lista, pero una persona administradora tiene que darte acceso antes de que puedas usar la aplicación.",
+    "hint": "Podrás entrar como siempre en cuanto te den acceso.",
+    "profile": "Editar tu perfil"
+  },
+  "common": {
+    "loading": "Cargando",
+    "cancel": "Cancelar",
+    "save": "Guardar cambios",
+    "close": "Cerrar"
+  },
+  "roles": {
+    "none": "Esperando acceso",
+    "user": "Usuario",
+    "admin": "Administración"
+  },
+  "profile": {
+    "title": "Perfil",
+    "saveName": "Guardar nombre",
+    "saved": "Perfil guardado.",
+    "preferences": "Preferencias",
+    "editName": "Editar nombre",
+    "password": {
+      "current": "Contraseña actual",
+      "new": "Nueva contraseña",
+      "confirm": "Repite la nueva contraseña",
+      "rules": "Al menos 10 caracteres, no solo cifras y distinta de tu correo.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "change": "Cambiar contraseña",
+      "saved": "Contraseña guardada. Se han cerrado tus otras sesiones.",
+      "errors": {
+        "invalid_credentials": "La contraseña actual no es correcta.",
+        "weak_password": "Esta contraseña es demasiado débil. Revisa las reglas bajo el campo.",
+        "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
+        "generic": "No se ha podido guardar la contraseña. Inténtalo de nuevo."
+      }
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "search": "Buscar",
+    "all": "Todos",
+    "role": "Rol",
+    "status": "Estado",
+    "name": "Nombre",
+    "actions": "Acciones",
+    "actionsFor": "Acciones de {{email}}",
+    "filters": {
+      "open": "Filtros",
+      "active": "Filtros ({{count}})"
+    },
+    "activeState": "Activo",
+    "inactiveState": "Desactivado",
+    "active": "Activo (puede entrar)",
+    "empty": "Ningún usuario coincide con estos filtros.",
+    "grant": "Dar acceso",
+    "granted": "{{email}} ya tiene acceso.",
+    "method": {
+      "label": "Forma de entrar",
+      "otp": "Código por correo",
+      "password": "Contraseña"
+    },
+    "create": {
+      "open": "Nuevo usuario",
+      "title": "Nuevo usuario",
+      "submit": "Crear usuario",
+      "done": "Usuario creado."
+    },
+    "edit": {
+      "title": "Editar usuario",
+      "saved": "Cambios guardados."
+    },
+    "password": {
+      "title": "Poner contraseña",
+      "help": "{{email}} entrará con esta contraseña. Se cerrarán sus sesiones abiertas.",
+      "submit": "Poner contraseña",
+      "saved": "Contraseña puesta."
+    },
+    "delete": {
+      "title": "Borrar usuario",
+      "confirm": "¿Borrar {{email}}? No se puede deshacer.",
+      "submit": "Borrar",
+      "done": "{{email}} se ha borrado."
+    },
+    "pagination": {
+      "previous": "Página anterior",
+      "next": "Página siguiente"
+    },
+    "errors": {
+      "email_taken": "Ya hay un usuario con este correo.",
+      "last_admin": "Tiene que quedar al menos una persona administradora activa.",
+      "cannot_delete_self": "No puedes borrar tu propia cuenta.",
+      "password_required": "Pon una contraseña para esta forma de entrar.",
+      "weak_password": "Contraseña demasiado débil: al menos 10 caracteres, no solo cifras y distinta del correo.",
+      "user_not_found": "Este usuario ya no existe.",
+      "validation_error": "Revisa los campos e inténtalo de nuevo.",
+      "forbidden": "Ya no tienes permiso para esto.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo."
+    }
+  }
+}

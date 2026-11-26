@@ -8,7 +8,7 @@ version=${1:-$(sed -n 's/^#define FW_VERSION "\(.*\)"/\1/p' firmware/config.h)}
 [ -n "$version" ] || { echo "cannot read FW_VERSION from firmware/config.h" >&2; exit 1; }
 
 test/run.sh
-out=build/release  # inside the project: the arduino-cli snap cannot write to /tmp
+out=build/release  # inside the project (bind-mounted in the toolchain container)
 rm -rf "$out"
 flags=""
 [ -n "$1" ] && flags="compiler.cpp.extra_flags=-DFW_VERSION=\"$version\""

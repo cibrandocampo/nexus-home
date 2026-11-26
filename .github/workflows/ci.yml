@@ -1,9 +1,15 @@
 name: CI
 
+# Garage firmware: host tests and build, in the same toolchain image as on a laptop
+# (devices/garage-iot-controller/docker/Dockerfile, `make help` there). Runs when the garage
+# controller or this workflow changes. The platform has its own workflow (platform.yml).
+
 on:
   pull_request:
+    paths: [devices/garage-iot-controller/**, .github/workflows/ci.yml]
   push:
     branches: [main]
+    paths: [devices/garage-iot-controller/**, .github/workflows/ci.yml]
 
 permissions:
   contents: read
@@ -20,11 +26,18 @@ jobs:
       run:
         working-directory: devices/garage-iot-controller
     steps:
-      - uses: actions/checkout@v4
-      - uses: arduino/setup-arduino-cli@v2
-      - name: Install the UNO R4 core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install arduino:renesas_uno@1.6.0
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Toolchain image
+        uses: docker/build-push-action@v7
+        with:
+          context: devices/garage-iot-controller/docker
+          tags: nexus-garage-toolchain
+          load: true
+          cache-from: type=gha,scope=garage-toolchain
+          cache-to: type=gha,mode=max,scope=garage-toolchain
+
       - name: Host tests and build
-        run: tools/build.sh
+        run: make build IMAGE_BUILT=1
