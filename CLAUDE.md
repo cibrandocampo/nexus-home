@@ -45,7 +45,8 @@ The platform and everything new must not run on the host.
 | Re-run QA on one task | `/dev-4-qa <task>` |
 | Close the cycle on the current branch | `/push` (docs, commit, push, PR, CI green) |
 
-- **One branch and one PR per plan** (`feat/<plan-slug>`), one commit per task. `/fix` gets its own PR.
+- **One branch and one PR per plan** (`feat/<plan-slug>`), or per phase when the plan defines phases
+  (`feat/<plan-slug>-<phase>`), one commit per task. `/fix` gets its own PR.
 - QA runs in the **`qa` subagent** (`.claude/agents/qa.md`): independent, re-executes everything,
   never trusts the implementer's evidence.
 - Plans: `docs/plans/`. Tasks: `docs/tasks/` (index in `docs/tasks/INDEX.md`).
@@ -59,15 +60,23 @@ The platform and everything new must not run on the host.
 | `test-discipline` | Before writing or debugging any test |
 | `dev-workflow` | Commands, toolchain, devices on the LAN |
 | `firmware-patterns` | Any change under `devices/` |
+| `platform-architecture` | Start of any platform feature or fix: layout, modules, auth model, checks before coding |
+| `platform-api` | Adding or reviewing platform endpoints (errors, pagination, auth, validation) |
+| `platform-backend` | Platform backend code (FastAPI, SQLAlchemy, migrations, emails, background work, tests) |
+| `platform-frontend` | Platform frontend code (React, Mantine, routing, queries, i18n, theme, accessibility, tests) |
+| `platform-security` | Before any platform commit touching auth, input, data access, endpoints, headers or deployment |
+| `platform-ci` | Platform workflows, Dependabot, image publishing, a red platform run |
+| `frontend-design` | Visual design of new platform screens (vendored, see its `UPSTREAM.md`) |
 | `modern-web-guidance` | Any HTML/CSS/client-side JS work (device web pages, platform frontend): search and read the matching guides first (its CLI runs in Docker) |
 | `security-audit` | Security questions and reviews (guidance mode); a full audit only when the user asks for one |
 
-`modern-web-guidance` (Google Chrome) and `security-audit` (Cloudflare) are vendored third-party skills:
+`modern-web-guidance` (Google Chrome), `security-audit` (Cloudflare) and `frontend-design` (Anthropic) are
+vendored third-party skills:
 see each `UPSTREAM.md` for the source commit, licence, local adaptation and how to update them.
 Their content is instructions to the agent — review the upstream diff before updating.
 
-The platform does not have a patterns skill yet: the platform plan must include a task that writes
-`platform-patterns` once the stack is chosen.
+The `platform-*` skills describe `platform/` (paths relative to it); they come from
+fastapi-react-template and are kept in step with the code like any other doc.
 
 ## Project state
 

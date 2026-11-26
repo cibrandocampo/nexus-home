@@ -48,3 +48,17 @@ Also `frontend-design` (generic, absent here). Keep nexus-home's own `dev-workfl
 |------|--------|
 | `.claude/skills/platform-*/SKILL.md`, `.claude/skills/frontend-design/` | CREATE |
 | `.claude/skills/dev-workflow/SKILL.md`, `CLAUDE.md`, `.claude/agents/qa.md`, `README.md` | MODIFY |
+
+## Implementation notes
+- Skills copied from the template at `af8fea9` and renamed; each says "Paths are relative to
+  `platform/`" under its title; cross-references use the new names (`platform-backend → Concurrency`…).
+  `platform-frontend` no longer points to the template's T015 evidence (described instead).
+- `platform-ci` is rewritten for nexus-home: path filters, the release guard, `platform-v` tags, the
+  three platform workflows, Dependabot under `/platform`.
+- `frontend-design` vendored as in the template (Anthropic, Apache-2.0); its `UPSTREAM.md` points to
+  `platform-frontend`. CLAUDE.md lists it with the other vendored skills.
+- `dev-workflow`: the Platform section has the template's layout, services, targets, dependencies and
+  the e2e image rebuild note; CI section lists both workflows.
+- Paths (`paths.txt`): 81 backticked paths found under `platform/`; the rest are bare file names inside
+  a module table (`schemas.py`, `router.py`… all exist under `platform/backend/app/<module>/`), action
+  references, a naming pattern (`Name.module.css`) and workflow files under `.github/workflows/`.
