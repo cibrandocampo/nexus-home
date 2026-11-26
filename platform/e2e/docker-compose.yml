@@ -10,7 +10,7 @@ x-admin: &admin
 
 services:
   db:
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     environment:
       POSTGRES_USER: e2e
       POSTGRES_PASSWORD: e2e
