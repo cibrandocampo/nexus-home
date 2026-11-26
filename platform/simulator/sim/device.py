@@ -2,15 +2,17 @@
 settings.cpp add around it (identity, stored settings and their validation, restart).
 Framework-free so tests can drive it directly; app.py puts HTTP in front of it."""
 
-import hashlib
 import random
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from sim.garage import LIGHT_MAX_S, TICK_HZ, Garage, Settings
+from sim import fwjson
+from sim.garage import TICK_HZ, Garage, Settings
 
 MODEL = "Garage IoT Controller (UNO R4 WiFi)"
+ID_PATTERN = re.compile(r"garage-[0-9a-f]{6}")
 ENTITIES = [
     {
         "id": "door",
@@ -37,8 +39,9 @@ ENTITIES = [
     },
 ]
 
-# settings.h limits and field sizes (characters, terminator excluded).
-NAME_MAX, SSID_MAX, PASSWORD_MAX, TOKEN_MAX = 32, 32, 63, 64
+# settings.h limits.
+# settings.h buffer sizes in bytes, terminator included (the readers refuse what does not fit).
+NAME_SIZE, SSID_SIZE, PASSWORD_SIZE, TOKEN_SIZE = 33, 33, 64, 65
 TOKEN_MIN = 8
 LIMITS = {
     "open_s": (5, 100, "invalid_open_time"),
@@ -57,7 +60,6 @@ MESSAGES = {
     "invalid_light_time": "Light time must be 10 to 600 seconds",
     "invalid_night_level": "Night level must be 1 to 1023",
     "invalid_display": "display must be true or false",
-    "invalid_json": "Malformed field in the request body",
 }
 
 
@@ -69,67 +71,72 @@ class DeviceError(Exception):
         self.status, self.code, self.message = status, code, message
 
 
-def _is_int(v: object) -> bool:
-    return isinstance(v, int) and not isinstance(v, bool)
+def _fail(code: str) -> DeviceError:
+    return DeviceError(400, code, MESSAGES[code])
 
 
-def apply_fields(payload: dict, current: Settings) -> tuple[Settings, bool]:
-    """http.cpp applyFields + settings.cpp validate: the new settings and whether the WiFi changed.
+def apply_fields(body: bytes, current: Settings) -> tuple[Settings, bool]:
+    """http.cpp applyFields + settings.cpp validate, on the raw body: the new settings and whether
+    the WiFi changed.
 
-    The firmware's JSON reader rejects a string longer than its field with that field's code, and a
-    number that is not a non-negative integer with the number's code, before validate() runs.
+    Fields are read with the firmware's own readers (fwjson): a string that does not fit its buffer
+    (bytes, not characters) or carries a non-ASCII `\\u` escape is refused with that field's code,
+    and so is a number that is not plain digits, before validate() runs.
     """
     d = Settings(**vars(current))
 
     def text(key: str, size: int, code: str) -> str | None:
-        if key not in payload:
-            return None
-        v = payload[key]
-        if not isinstance(v, str) or len(v) > size or any(ord(c) < 0x20 for c in v):
-            raise DeviceError(400, code, MESSAGES[code])
-        return v
+        r, v = fwjson.string(body, key, size)
+        if r is fwjson.Result.INVALID:
+            raise _fail(code)
+        return v if r is fwjson.Result.OK else None
 
-    if (v := text("name", NAME_MAX, "invalid_name")) is not None:
+    if (v := text("name", NAME_SIZE, "invalid_name")) is not None:
         d.name = v
-    if (v := text("token", TOKEN_MAX, "invalid_token")) is not None:
+    if (v := text("token", TOKEN_SIZE, "invalid_token")) is not None:
         d.token = v
     for key, (_, _, code) in LIMITS.items():
-        if key in payload:
-            v = payload[key]
-            if not _is_int(v) or v < 0 or v > 0xFFFF:
-                raise DeviceError(400, code, MESSAGES[code])
-            setattr(d, key, v)
-    if "display" in payload:
-        if not isinstance(payload["display"], bool):
-            raise DeviceError(400, "invalid_display", MESSAGES["invalid_display"])
-        d.display = payload["display"]
-    ssid = text("wifi_ssid", SSID_MAX, "invalid_ssid")
-    password = text("wifi_password", PASSWORD_MAX, "invalid_password")
+        r, n = fwjson.number(body, key)
+        if r is fwjson.Result.INVALID or (r is fwjson.Result.OK and n > 0xFFFF):
+            raise _fail(code)
+        if r is fwjson.Result.OK:
+            setattr(d, key, n)
+    r, on = fwjson.flag(body, "display")
+    if r is fwjson.Result.INVALID:
+        raise _fail("invalid_display")
+    if r is fwjson.Result.OK:
+        d.display = on
+    rs, ssid = fwjson.string(body, "wifi_ssid", SSID_SIZE)
+    rp, password = fwjson.string(body, "wifi_password", PASSWORD_SIZE)
+    if rs is fwjson.Result.INVALID:
+        raise _fail("invalid_ssid")
+    if rp is fwjson.Result.INVALID:
+        raise _fail("invalid_password")
     wifi_changed = False
-    if ssid is not None and ssid != d.wifi_ssid:
+    if rs is fwjson.Result.OK and ssid != d.wifi_ssid:
         d.wifi_ssid, wifi_changed = ssid, True
-    if password is not None and (
-        password or wifi_changed
-    ):  # empty keeps it, unless the network changed
+    # An empty password keeps the current one, unless the network changed.
+    if rp is fwjson.Result.OK and (password or wifi_changed):
         if password != d.wifi_password:
             wifi_changed = True
         d.wifi_password = password
     if not d.wifi_ssid:
-        raise DeviceError(400, "invalid_ssid", MESSAGES["invalid_ssid"])
+        raise _fail("invalid_ssid")
     if not d.token:
-        raise DeviceError(400, "invalid_token", MESSAGES["invalid_token"])
+        raise _fail("invalid_token")
     if err := validate(d):
-        raise DeviceError(400, err, MESSAGES[err])
+        raise _fail(err)
     return d, wifi_changed
 
 
 def validate(d: Settings) -> str | None:
-    """settings.cpp validate (length checks already done by apply_fields)."""
+    """settings.cpp validate (the buffer sizes are already enforced by the readers)."""
     if not d.name:
         return "invalid_name"
-    if d.wifi_ssid and 0 < len(d.wifi_password) < 8:
+    if d.wifi_ssid and 0 < len(d.wifi_password.encode()) < 8:
         return "invalid_password"
-    if d.token and (len(d.token) < TOKEN_MIN or any(c <= " " or c > "~" for c in d.token)):
+    token = d.token.encode()
+    if token and (len(token) < TOKEN_MIN or any(b <= 0x20 or b > 0x7E for b in token)):
         return "invalid_token"
     for key, (low, high, code) in LIMITS.items():
         if not low <= getattr(d, key) <= high:
@@ -144,10 +151,16 @@ class Identity:
     modem_fw: str = "0.6.0"
     ip: str = "127.0.0.1"
 
+    def __post_init__(self) -> None:
+        if not ID_PATTERN.fullmatch(self.id):
+            raise ValueError(f"device id must be garage-<6 lowercase hex>, not {self.id!r}")
+
     @property
     def mac(self) -> str:
-        digest = hashlib.sha256(self.id.encode()).digest()
-        return ":".join(f"{b:02X}" for b in (b"\x02" + digest[:5]))
+        """As net.cpp: the id is the MAC's last three bytes, so the MAC ends with them. The first
+        three are a locally administered prefix (a real board has the module maker's)."""
+        tail = self.id.removeprefix("garage-")
+        return ":".join(["02", "00", "00", tail[0:2], tail[2:4], tail[4:6]]).upper()
 
 
 class Device:
@@ -172,6 +185,9 @@ class Device:
         self.down_until = 0.0  # not answering (restarting, or the offline hook) until this time
         self.reboot_at: float | None = None
         self.fail_next_save = False
+        self.wifi_switch: tuple[str, str] | None = (
+            None  # new network, joined when the board is back
+        )
 
     # ---- clock ----
 
@@ -183,6 +199,12 @@ class Device:
             self.reboot_at = None
             self.reset_reason = "software"
             self.garage.boot()
+        if self.wifi_switch and t >= self.down_until:
+            self.advance_to(self.down_until)
+            self.garage.settings.wifi_ssid, self.garage.settings.wifi_password = self.wifi_switch
+            self.wifi_switch = None
+            self.garage.note("wifi_up")
+            self.garage.note("wifi_changed")
         self.advance_to(t)
 
     def advance_to(self, t: float) -> None:
@@ -247,7 +269,7 @@ class Device:
 
     # ---- actions ----
 
-    def command(self, path: str, query_duration: str | None, payload: dict) -> dict:
+    def command(self, path: str, query: str | None, body: bytes) -> dict:
         g = self.garage
         door = {
             "door/open": g.door_open,
@@ -258,7 +280,11 @@ class Device:
         if path in door:
             return self._result(door[path]())
         if path == "light/on":
-            seconds = self._duration(query_duration, payload)
+            seconds = fwjson.duration(query, body)
+            if seconds is False:
+                raise DeviceError(400, "invalid_duration", "duration must be 0..86400 seconds")
+            if seconds is None:
+                seconds = g.light_def_ticks // TICK_HZ
             return self._result(g.light_on(seconds))
         if path == "light/off":
             return self._result(g.light_off())
@@ -267,32 +293,14 @@ class Device:
             return self._result("ok")
         raise DeviceError(404, "not_found", "Unknown command")
 
-    def _duration(self, query: str | None, payload: dict) -> int:
-        bad = DeviceError(400, "invalid_duration", "duration must be 0..86400 seconds")
-        if query is not None:
-            digits = ""
-            for c in query:
-                if not c.isdigit():
-                    break
-                digits += c
-            if not digits or int(digits) > LIGHT_MAX_S:
-                raise bad
-            return int(digits)
-        if "duration" in payload:
-            v = payload["duration"]
-            if not _is_int(v) or v < 0 or v > LIGHT_MAX_S:
-                raise bad
-            return v
-        return self.garage.light_def_ticks // TICK_HZ
-
     def _result(self, r: str) -> dict:
         if r == "busy":
             raise DeviceError(409, "door_busy", "Door is moving or was just triggered, retry later")
         return {"result": r, "state": self.state()}
 
-    def change_settings(self, payload: dict) -> dict:
+    def change_settings(self, body: bytes) -> dict:
         old = self.settings
-        new, wifi_changed = apply_fields(payload, old)
+        new, wifi_changed = apply_fields(body, old)
         keep = Settings(**vars(new))
         keep.wifi_ssid, keep.wifi_password = old.wifi_ssid, old.wifi_password
         if keep != old:
@@ -304,11 +312,14 @@ class Device:
             self.garage.configure()
             self.garage.note("settings_changed", "api")
         if wifi_changed:
-            # Not simulated: the board would try the new network for up to 60 s. Here it "connects".
-            self.garage.settings.wifi_ssid = new.wifi_ssid
-            self.garage.settings.wifi_password = new.wifi_password
-            self.garage.note("wifi_changed")
-            return {"result": "testing_wifi", "settings": self.settings_json()}
+            # As the board: the answer still shows the old network with wifi_trying, then it drops
+            # the connection to try the new one. Here the new network always works: back after
+            # restart_s with wifi_up and wifi_changed (the board gives up after 60 s on a bad one).
+            self.wifi_switch = (new.wifi_ssid, new.wifi_password)
+            self.down_until = self.now() + self.restart_s
+            answer = {"result": "testing_wifi", "settings": self.settings_json()}
+            answer["settings"]["wifi_trying"] = True
+            return answer
         return {"result": "ok", "settings": self.settings_json()}
 
     def restart(self) -> dict:

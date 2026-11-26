@@ -92,3 +92,94 @@ and that every error code in the README's error table is produced by some reques
   2 failed; the real README: 11 passed); `session.txt` (scripted curl session at `SIM_SPEED=10` from the
   dev network: open → open after 22 s, close, stop part way (`stopped: down`), `door_busy`, light 600 s,
   settings change, 401, restart → `reset_reason: software`, settings kept).
+
+## QA — RETURNED (round 1)
+
+**Date**: 2026-11-26
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 1 | `make test-simulator` command (as the Makefile runs it), 3 runs: 77 passed each, 98 % total (≥ 95 %) | `docs/tasks/evidence/T005/qa/tests.txt` | PASS (but see B1) |
+| 2 | Contract catches drift (scratch copies mounted as `/contract`): README State key renamed → 2 failed; `http.cpp` `since_s` renamed → 1 failed; new README error row → 1 failed; new `/info` entity in `http.cpp` → 1 failed; real files → 11 passed | `docs/tasks/evidence/T005/qa/contract.txt` | PASS |
+| 3 | Scripted session against `sim-garage-a` (dev stack, `SIM_SPEED=10`, curl container on `nexus-dev_default`): info, opening → open (`travel_end`), restart while moving 409, noop, close, stop → `stopped: down`, `door_busy` (gap and queued reversal), three-pulse close → closed, light 600 s / body 30 s / `invalid_duration`, 401, 403, 405, 404, settings change + `invalid_open_time`, 501, log, restart → `software`, log cleared, `rev` 0, settings kept | `docs/tasks/evidence/T005/qa/session.txt` | PASS |
+| 4 | Lint: ruff check + format check pass; `make lint` includes `lint-simulator` and `make test` includes `test-simulator` (`make -n` in `nexus-garage-toolchain`); CI `Simulator` job green, all PR #6 checks pass | `docs/tasks/evidence/T005/qa/lint.txt`, `docs/tasks/evidence/T005/qa/make-n.txt` | PASS |
+| 5 | Full suites: backend lint + 325 tests (99 %), frontend lint + 128 tests, e2e Prettier, firmware host tests | `docs/tasks/evidence/T005/qa/full-platform.txt`, `docs/tasks/evidence/T005/qa/firmware-tests.txt` | PASS |
+| 6 | Fidelity against the firmware sources (`garage.cpp`, `http.cpp`, `settings.cpp`, `json.h`, `net.cpp`) | `docs/tasks/evidence/T005/qa/fidelity-probes.txt`, `docs/tasks/evidence/T005/qa/reversal-probe.txt` | FAIL (B2, B3) |
+| 7 | Compose services, `.env.example`, CI job and path filters, Dependabot, docs (simulator README, dev-workflow, platform-ci, configuration.md) | code review | PASS (observations O4, O6, O7) |
+
+### Blockers
+- **B1**: `platform/simulator/sim/garage.py:366`, `:371`, `:352`, `:226`, `:204` — new lines without a test
+  (`tests.txt`, coverage "Missing"). Two are README behaviours a platform client depends on: `/door/open` while
+  the door is closing → 409 `door_busy` (`:366`, garage.cpp:397) and `/door/open` on a door stopped going down
+  → one pulse, `ok` (`:371`, garage.cpp:400). Also untested: auto light leaving a manually held light alone
+  (`:226`, garage.cpp:116) and `_reverse_then` refused by the pulse gap (`:352`, garage.cpp:386). `:204`
+  (`set_door` to the same state) needs a test or a note that it is unreachable, as in the firmware.
+- **B2**: `platform/simulator/sim/device.py:84-90` (`text()`) — string settings are checked on the decoded
+  Python string by character count, rejecting any control character. The firmware's reader
+  (`devices/garage-iot-controller/firmware/json.h:280-320`) counts bytes (raw UTF-8 passes, `len + 1 >= n`),
+  rejects `\u` escapes above 0x7F (json.h:305) and accepts escaped control characters. Probes P1–P4:
+  `{"name":"Jardín"}` → simulator 200 `ok`, board 400 `invalid_name`; 20 × "ñ" (40 bytes > 32) →
+  simulator 200, board 400 `invalid_name`; `"a\nb"` / `"a\u0001b"` escaped → simulator 400, board 200. A
+  platform rename with an accent (a Python JSON encoder escapes non-ASCII by default) passes against the
+  simulator and fails on the real board, which is the failure the simulator exists to catch. Expected: field
+  reading equivalent to json.h `str` (bytes, escape rules), with tests. Reading `num`/`flag`/`duration` from the
+  raw body the same way would also align P5 (non-JSON body: board 200 `ok`, it never answers `invalid_json`;
+  simulator 400 `invalid_json`, app.py:115-116) and P6 (`{"duration": 30.5}`: board 30 s via `strtoul`,
+  simulator 400), which are not blocking on their own.
+- **B3**: `platform/simulator/sim/garage.py:177-182` — `configure()` does not re-decide night as
+  `garage.cpp:340-351` does (`decideNight(true)` on every settings save, which drops the hysteresis). Probe P15:
+  night with level 690 and `night_level` 700, then `night_level` 695 → board: raw night false at once, `day`
+  60 s later; simulator: stays night indefinitely (still `night: true` 70 s later). A platform test that changes
+  the night level and expects the board's answer gets a different one.
+
+### Observations (non-blocking)
+- **O1** `device.py:147-150` — the MAC is a hash of the id; on the board the id is derived from the MAC
+  (`net.cpp:55-56`: `garage-` + last three bytes, lowercase), so `/info` id and MAC never agree here
+  (P11, `garage-abc123` / `02:40:C4:0B:0F:AF`). Deriving the last three bytes from `SIM_ID` keeps the invariant.
+- **O2** `device.py:306-311` — the `testing_wifi` answer shows the new `wifi_ssid` and `wifi_trying: false`; the
+  board answers with the old network (not saved yet) and `wifi_trying: true` (`http.cpp:350-354`, `:252`) (P12).
+  The README only says the network "connects at once"; either match the answer or say so.
+- **O3** `garage.py:175` — `wifi_up` at boot is recorded without `rev += 1`; on the board it is a `note()`
+  (`net.cpp:72`, `garage.cpp:377-381`), so `rev` after a boot is 0 here and ≥ 1 there (P13).
+- **O4** Transport limits are neither simulated nor listed under "Not simulated": 1 KB request limit → 413
+  `too_large` (`http.cpp:496-506`, P9: a 2 KB request answers 200 here), one connection at a time with
+  `Connection: close` (`http.cpp:65`, `:476-485`), 1.5 s request timeout (`:17`, `:508`).
+- **O5** `app.py:178` — methods outside GET/POST/PUT/PATCH/DELETE (OPTIONS) get Starlette's plain-text 405, not
+  the JSON envelope the board sends for any method (P7). Error answers also lack `Cache-Control: no-store`
+  (`app.py:27-28` vs `http.cpp:65`).
+- **O6** Contract test reads error codes only from the README: renaming `unauthorized` in `http.cpp` alone still
+  passes (contract.txt `cpp_errcode`: 11 passed). Status per code and messages are not compared with
+  `respondError` calls, and `garage.cpp`/`settings.cpp`/`json.h` (the logic the simulator ports) are neither
+  under contract nor in the workflow path filter, so a behaviour change there does not re-run the simulator
+  job. Worth extracting `(status, code)` pairs from `http.cpp`, and a note in the simulator README that
+  behaviour drift is guarded by review only.
+- **O7** `platform/simulator/Dockerfile:2` — "the dev stack also bind-mounts it" is not true: the dev compose
+  services have no volume; only the `make *-simulator` runs mount `simulator/`.
+- **O8** `app.py:147`, `:152`, `:154` — hooks with a malformed body (`{"position": "x"}`) raise and answer 500
+  instead of 400. Test-only surface.
+- **O9** Faithful, worth knowing for phase 2 tests: after `/sim/power_cycle` with the door part way the opener
+  keeps its last direction while the board forgets `stopped`, so a `close` can drive the door up and end in
+  `close_failed` (seen on the first session attempt on the dev instance, which had been left part way, with
+  `name` "Sim A" and `open_s` 12; restored to `open_s` 12 after the session).
+
+## Fixes after QA round 1
+- B1: tests for `/door/open` while closing (409) and after a stopped close (one pulse), a reversal
+  refused inside the pulse gap, the auto light leaving a hand-held light alone, and `setDoor` to the
+  same state (a guard ported from `garage.cpp` that no path reaches today, now commented as such).
+  Line coverage 100 %, branch 99 %.
+- B2: request bodies are read with a byte-for-byte port of `json.h` (`sim/fwjson.py`): lengths in
+  bytes, `\u` above 0x7F refused, escaped control characters accepted, raw ones refused, `30.0`
+  refused in settings, `duration` read up to its first non-digit (`30.5` → 30 s, as `findDuration`),
+  a non-JSON body changes nothing (200, never `invalid_json`). Tests pin each case.
+- B3: `configure()` re-decides night at once (`decideNight(true)`), so raising the night level above
+  the reading ends night and logs `day` after the debounce.
+- Observations fixed: O1 the MAC ends with the id (`02:00:00:xx:yy:zz`; a malformed `SIM_ID` is refused);
+  O2 `testing_wifi` answers with the old network and `wifi_trying: true`, the board goes silent for
+  `SIM_RESTART_S` and comes back with `wifi_up` and `wifi_changed`; O3 the boot `wifi_up` increments
+  `rev`; O4 the transport limits and the always-working WiFi change are listed under "Not simulated";
+  O5 errors carry `Cache-Control: no-store`, OPTIONS gets the JSON 405; O6 the contract also checks each
+  documented error's status against the simulator and against every literal `respondError` in
+  `http.cpp`, and the Platform workflow runs on changes to `garage.cpp`/`.h`, `settings.cpp`, `json.h`
+  and `config.h` too; O7 Dockerfile comment; O8 malformed hook bodies answer 400 `invalid_hook_body`;
+  O9 the power-cycle difference is described in the simulator README.
+- Evidence: `tests-r2.txt` (lint clean; 89 + 12 contract tests in one run).

@@ -1,5 +1,6 @@
 # Garage board simulator (development and tests only). Speaks the garage's /api/v1 on port 80, as a
-# real board does. The code is copied in; the dev stack also bind-mounts it.
+# real board does. The code is copied in (rebuild after changing it); `make test-simulator` mounts
+# the working copy.
 FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

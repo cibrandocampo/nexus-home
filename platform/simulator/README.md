@@ -47,11 +47,36 @@ when the simulator drifts. The Platform workflow runs when either file changes.
 
 `GET /sim/status` shows the physical door (position, motion, obstruction), the uptime and the speed.
 
+## Request bodies, as the board reads them
+
+The board does not parse JSON: it finds `"key":` in the raw body and reads the value there
+(`firmware/json.h`, ported in `sim/fwjson.py`). What a client must know:
+
+- Strings are counted in **bytes** (a name holds 32: 16 "ñ" fit, 17 do not). Raw UTF-8 passes; a `\u`
+  escape above 0x7F is refused, so send non-ASCII text as raw UTF-8, never escaped (Python's
+  `json.dumps` escapes by default: use `ensure_ascii=False`). Escaped control characters (`\n`) are
+  accepted, raw ones are not.
+- Numbers are plain digits: `30.0` is refused in the settings; a light `duration` is read up to its
+  first non-digit (`30.5` is 30 s).
+- A body that is not JSON has no fields: the settings answer 200 `ok` with nothing changed.
+
 ## Not simulated
 
-Setup mode (`/setup`), the WiFi network change (a new network "connects" at once, answering
-`testing_wifi`), the web page (a placeholder) and firmware updates (`/firmware` answers 501
-`not_simulated`; platform phase 3 adds them).
+- Setup mode (`/setup`) and the web page (a placeholder).
+- A WiFi network change always works: the board answers `testing_wifi` (old network, `wifi_trying`),
+  stays silent for `SIM_RESTART_S` and comes back on the new one (`wifi_up`, `wifi_changed`); a network
+  that fails (`wifi_change_failed` after 60 s on a board) is not simulated.
+- Firmware updates: `/firmware` answers 501 `not_simulated` (platform phase 3 adds them).
+- The transport limits of the board's server: requests over 1 KB (413 `too_large`), one connection at a
+  time with `Connection: close`, and its 1.5 s read timeout. A real board is slower and serial: a
+  client must not rely on the simulator's concurrency or speed.
+- The MAC's first three bytes (the module maker's on a board; `02:00:00` here). The last three are the
+  id, as on a board.
+
+One difference to keep in mind when writing tests: after `/sim/power_cycle` with the door part way,
+the simulated opener still remembers which way it last moved, as a real opener does, but the board
+starts with no memory of it (`stopped: none`). A `close` can then drive the door up and end in
+`close_failed`, exactly as on the real installation after a power cut.
 
 ## Commands (from `platform/`)
 

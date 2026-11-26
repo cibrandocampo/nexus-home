@@ -168,11 +168,10 @@ class Garage:
         self.raw_night = False
         self.next_sample = 0
         self.configure()
-        self.decide_night(fresh=True)
         self.night = Input(state=self.raw_night)
         self.record("boot")
         self.record(door_event(self.door), "sensor", "startup")
-        self.record("wifi_up")
+        self.note("wifi_up")  # net.cpp onConnected: logged with a rev increment
 
     def configure(self) -> None:
         s = self.settings
@@ -180,6 +179,7 @@ class Garage:
         self.close_ticks = s.close_s * TICK_HZ
         self.light_def_ticks = s.light_s * TICK_HZ
         self.night_level = s.night_level
+        self.decide_night(fresh=True)  # garage.cpp configure: a new level applies at once
 
     # ---- helpers ----
 
@@ -200,7 +200,9 @@ class Garage:
         self.door_timer = timer
         if why != "stopped":
             self.stopped = "none"
-        if self.door == door:
+        if (
+            self.door == door
+        ):  # as garage.cpp setDoor; no path of the state machine lands here today
             return
         self.door = door
         self.door_since = self.ticks

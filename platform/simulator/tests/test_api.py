@@ -152,9 +152,44 @@ def test_invalid_settings_are_refused(board: Board, body, expected):
     assert r.json()["error"]["message"]
 
 
-def test_settings_body_must_be_a_json_object(board: Board):
+def test_a_body_that_is_not_json_changes_nothing(board: Board):
+    # The board reads fields out of the text and finds none: nothing to change, 200 (never 400).
     r = board.post("settings", content=b"{not json", headers={"Content-Type": "application/json"})
-    assert code(r) == (400, "invalid_json")
+    assert (r.status_code, r.json()["result"]) == (200, "ok")
+
+
+def raw_settings(board: Board, body: bytes):
+    return board.post("settings", content=body, headers={"Content-Type": "application/json"})
+
+
+def test_names_are_bytes_as_the_firmware_reads_them(board: Board):
+    # Raw UTF-8 passes through, counted in bytes (32 at most).
+    assert raw_settings(board, '{"name": "Jardín"}'.encode()).json()["settings"]["name"] == "Jardín"
+    assert code(raw_settings(board, ('{"name": "' + "ñ" * 17 + '"}').encode())) == (
+        400,
+        "invalid_name",
+    )
+    assert raw_settings(board, ('{"name": "' + "ñ" * 16 + '"}').encode()).status_code == 200
+    # \u escapes only for ASCII: a client that escapes non-ASCII (json.dumps' default) is refused.
+    assert code(raw_settings(board, b'{"name": "Jard\\u00edn"}')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "A\\u0000"}')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "A\\uzzzz"}')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "A\\q"}')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "unterminated')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "A\\')) == (400, "invalid_name")
+    # Escaped control characters and \u for ASCII are accepted, raw control characters are not.
+    ok = raw_settings(board, b'{"name": "Two\\nlines \\u0041\\t\\/"}').json()["settings"]["name"]
+    assert ok == "Two\nlines A\t/"
+    assert code(raw_settings(board, b'{"name": "A\x01"}')) == (400, "invalid_name")
+
+
+def test_numbers_and_flags_as_the_firmware_reads_them(board: Board):
+    assert raw_settings(board, b'{"open_s" : 30}').json()["settings"]["open_s"] == 30
+    assert code(raw_settings(board, b'{"open_s": 30.0}')) == (400, "invalid_open_time")
+    assert code(raw_settings(board, b'{"open_s": 99999999999}')) == (400, "invalid_open_time")
+    assert raw_settings(board, b'{"display": false}').json()["settings"]["display"] is False
+    # A key without a colon after it is not that field.
+    assert raw_settings(board, b'{"note": "open_s", "x": 1}').json()["settings"]["open_s"] == 30
 
 
 def test_a_new_token_replaces_the_old_one(board: Board):
@@ -164,11 +199,16 @@ def test_a_new_token_replaces_the_old_one(board: Board):
     assert ok.status_code == 200
 
 
-def test_a_new_wifi_network_answers_testing_wifi(board: Board):
+def test_a_new_wifi_network_answers_testing_wifi_then_joins_it(board: Board):
     r = board.post("settings", json={"wifi_ssid": "other", "wifi_password": "other-pass"})
     assert r.json()["result"] == "testing_wifi"
-    assert r.json()["settings"]["wifi_ssid"] == "other"
-    assert board.events()[0]["event"] == "wifi_changed"
+    # As the board: the answer still shows the old network, being tried.
+    settings = r.json()["settings"]
+    assert (settings["wifi_ssid"], settings["wifi_trying"]) == ("nexus-sim", True)
+    assert board.device.down_for() == pytest.approx(2.0)
+    board.wait(2.5)
+    assert [e["event"] for e in board.events()[:2]] == ["wifi_changed", "wifi_up"]
+    assert board.get("settings", headers=board.auth).json()["wifi_ssid"] == "other"
     same = board.post("settings", json={"wifi_ssid": "other", "wifi_password": ""})
     assert same.json()["result"] == "ok"  # an empty password keeps the current one
 
@@ -307,10 +347,26 @@ def test_the_app_factory_and_its_background_clock(monkeypatch):
         assert app.state.device.garage.ticks > before
 
 
-def test_identity_mac_is_stable_and_local():
-    a, b = Identity(id="garage-111111"), Identity(id="garage-111111")
-    assert a.mac == b.mac
-    assert a.mac.startswith("02:")
+def test_identity_mac_ends_with_the_id_as_on_the_board():
+    assert Identity(id="garage-3562d4").mac == "02:00:00:35:62:D4"
+    with pytest.raises(ValueError):
+        Identity(id="garage-XYZ")
+
+
+def test_errors_are_not_cached_and_options_gets_the_envelope(board: Board):
+    r = board.post("door/nope")
+    assert r.headers["cache-control"] == "no-store"
+    assert code(board.client.options("/api/v1/state")) == (405, "method_not_allowed")
+
+
+def test_hooks_refuse_a_malformed_body(board: Board):
+    bad_json = board.client.post("/sim/door", content=b"[1]")
+    assert code(bad_json) == (400, "invalid_hook_body")
+    assert code(board.hook("door", {"position": "far"})) == (400, "invalid_hook_body")
+
+
+def test_rev_counts_the_boot_wifi_event(board: Board):
+    assert board.state()["rev"] == 1  # net.cpp logs wifi_up with a rev increment
 
 
 def test_make_app_without_hooks_or_background():
@@ -318,3 +374,9 @@ def test_make_app_without_hooks_or_background():
     app = make_app(b.device, hooks=False, background=False)
     with TestClient(app) as client:
         assert client.get("/api/v1/state").status_code == 200
+
+
+def test_hooks_refuse_invalid_json_and_display_reads_true(board: Board):
+    assert code(board.client.post("/sim/door", content=b"{bad")) == (400, "invalid_hook_body")
+    board.post("settings", json={"display": False})
+    assert board.post("settings", json={"display": True}).json()["settings"]["display"] is True

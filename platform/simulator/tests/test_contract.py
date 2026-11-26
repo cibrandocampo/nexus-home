@@ -120,20 +120,22 @@ def test_events_sources_and_reasons_are_documented(board: Board):
         assert e.reason == "none" or e.reason in reasons_table
 
 
-def error_codes() -> set[str]:
+def error_table() -> dict[str, int]:
+    """Code → HTTP status, from the README's error table; `invalid_*` is kept as `invalid_`."""
     table = API[API.index("| Status | Code |") : API.index("`POST /settings` answers")]
-    codes = set()
-    for row in re.findall(r"^\| \d{3} \| (.*?) \|", table, flags=re.M):
-        codes |= set(re.findall(r"`([a-z_]+)`", row))
-    return codes
+    statuses = {}
+    for status, row in re.findall(r"^\| (\d{3}) \| (.*?) \|", table, flags=re.M):
+        for c in re.findall(r"`([a-z_]+\*?)`", row):
+            statuses[c.rstrip("*")] = int(status)
+    return statuses
 
 
-def produce(board: Board) -> set[str]:
-    """Errors a client can get from the simulator, one request each."""
-    out = set()
+def produce(board: Board) -> dict[str, int]:
+    """Errors a client can get from the simulator, one request each: code → status."""
+    out = {}
 
     def keep(r) -> None:
-        out.add(r.json()["error"]["code"])
+        out[r.json()["error"]["code"]] = r.status_code
 
     keep(board.post("light/on?duration=x"))
     keep(board.post("light/on", auth=False))
@@ -159,15 +161,35 @@ def produce(board: Board) -> set[str]:
     return out
 
 
-def test_every_documented_error_is_produced(board: Board):
-    documented = error_codes()
-    assert "door_busy" in documented  # the table was found
+def test_every_documented_error_is_produced_with_its_status(board: Board):
+    table = error_table()
+    assert table["door_busy"] == 409  # the table was found
     produced = produce(board)
-    wildcard = {c for c in produced if c.startswith("invalid_")}
-    assert documented - NOT_PRODUCIBLE - {"invalid"} <= produced
-    assert len(wildcard) >= 9  # the `invalid_*` row: every settings field and the duration
+    for c, status in table.items():
+        if c in NOT_PRODUCIBLE:
+            continue
+        if c == "invalid_":  # the `invalid_*` row: every settings field and the duration
+            wildcard = {p: s for p, s in produced.items() if p.startswith("invalid_")}
+            assert len(wildcard) >= 9
+            assert set(wildcard.values()) == {status}
+        else:
+            assert produced.get(c) == status, c
+
+
+def test_http_cpp_answers_the_documented_statuses():
+    """Every respondError(status, "code", …) in http.cpp matches the README table's status."""
+    table = error_table()
+    for status, c in re.findall(r'respondError\((\d{3}), "([a-z_]+)"', HTTP_CPP):
+        expected = table.get(c, table["invalid_"] if c.startswith("invalid_") else None)
+        if c in (
+            "bad_request",
+            "too_large",
+            "setup_mode",
+        ):  # transport and setup mode: not in the table
+            continue
+        assert expected == int(status), c
 
 
 @pytest.mark.parametrize("code", sorted(NOT_PRODUCIBLE))
 def test_exemptions_are_still_documented(code):
-    assert code in error_codes()
+    assert code in error_table()

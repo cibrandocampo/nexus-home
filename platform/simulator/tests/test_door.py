@@ -222,8 +222,57 @@ def test_invalid_durations_are_refused(board: Board):
     for bad in ("light/on?duration=abc", "light/on?duration=90000", "light/on?duration="):
         r = board.post(bad)
         assert (r.status_code, r.json()["error"]["code"]) == (400, "invalid_duration")
-    for body in ({"duration": -1}, {"duration": "30"}, {"duration": 1.5}, {"duration": True}):
+    for body in ({"duration": -1}, {"duration": "30"}, {"duration": True}, {"duration": 90000}):
         assert board.post("light/on", json=body).json()["error"]["code"] == "invalid_duration"
+
+
+def test_a_body_duration_is_read_up_to_its_first_non_digit(board: Board):
+    # http.cpp findDuration: strtoul after `"duration"` and its colon, so 30.5 is 30 s.
+    light = board.post("light/on", json={"duration": 30.5}).json()["state"]["light"]
+    assert light["remaining_s"] == 30
+    light = board.post("light/on?x=1&duration=45").json()["state"]["light"]
+    assert light["remaining_s"] == 45
+
+
+def test_open_while_closing_is_busy_and_open_after_a_stopped_close_is_one_pulse(board: Board):
+    board.post("door/open")
+    board.wait(21)
+    board.post("door/close")
+    board.wait(1.3)
+    assert board.post("door/open").status_code == 409  # opposite movement in progress
+    board.post("door/stop")
+    board.wait(1.3)
+    assert board.state()["door"]["stopped"] == "down"
+    assert board.post("door/open").json()["state"]["door"]["state"] == "opening"  # one pulse
+    assert board.device.garage.queued == 0
+
+
+def test_a_reversal_is_refused_inside_the_pulse_gap(board: Board):
+    board.post("door/open")
+    board.wait(8)
+    board.post("door/stop")  # stopped going up: open needs a reversal, but the gap is running
+    assert board.post("door/open").status_code == 409
+
+
+def test_auto_light_leaves_a_light_held_on_by_hand(board: Board):
+    board.hook("light_level", {"level": 900})
+    board.wait(72)
+    board.post("light/on?duration=0")
+    board.post("door/open")
+    light = board.state()["light"]
+    assert (light["state"], light["timed"]) == ("on", False)
+
+
+def test_a_new_night_level_applies_at_once(board: Board):
+    # garage.cpp configure runs decideNight(true): raising the level above the reading ends night.
+    board.hook("light_level", {"level": 690})
+    board.post("settings", json={"night_level": 680})
+    board.wait(72)
+    assert board.state()["night"] is True
+    board.post("settings", json={"night_level": 695})
+    board.wait(61)
+    assert board.state()["night"] is False
+    assert board.events()[0]["event"] == "day"
 
 
 def test_every_change_increases_rev(board: Board):
@@ -238,3 +287,10 @@ def test_the_log_keeps_the_last_64_events(board: Board):
     log = board.get("log").json()
     assert len(log["events"]) == 64
     assert log["uptime_s"] == 0
+
+
+def test_setting_the_door_to_its_own_state_changes_nothing(board: Board):
+    g = board.device.garage
+    rev, logged = g.rev, len(g.log)
+    g.set_door("closed", 0, "none")
+    assert (g.rev, len(g.log)) == (rev, logged)

@@ -25,7 +25,11 @@ SYNC_EVERY_S = 0.05
 
 
 def error(status: int, code: str, message: str) -> JSONResponse:
-    return JSONResponse({"error": {"code": code, "message": message}}, status_code=status)
+    return JSONResponse(
+        {"error": {"code": code, "message": message}},
+        status_code=status,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 def answer(status: int, body: dict) -> JSONResponse:
@@ -110,17 +114,15 @@ def make_app(device: Device, hooks: bool = True, background: bool = True) -> Sta
             return error(403, "forbidden", "Cross-origin request rejected")
         if not device.authorized(auth):
             return error(401, "unauthorized", "Missing or invalid bearer token")
-        payload = parse_body(await request.body())
+        # The raw body: the board reads fields out of it as text (fwjson), it never parses JSON.
+        body = await request.body()
         if path == "settings":
-            if payload is None:
-                return error(400, "invalid_json", "Malformed field in the request body")
-            return answer(200, device.change_settings(payload))
+            return answer(200, device.change_settings(body))
         if path == "restart":
             return answer(200, device.restart())
         if path == "firmware":
             return error(501, "not_simulated", "Firmware updates are not simulated yet")
-        duration = request.query_params.get("duration")
-        return answer(200, device.command(path, duration, payload or {}))
+        return answer(200, device.command(path, request.url.query or None, body))
 
     async def hook(request: Request) -> Response:
         if request.method != "POST":
@@ -138,8 +140,15 @@ def make_app(device: Device, hooks: bool = True, background: bool = True) -> Sta
                 )
             return error(405, "method_not_allowed", "Use POST")
         device.sync()
-        body = parse_body(await request.body()) or {}
-        name = request.url.path[len("/sim/") :]
+        body = parse_body(await request.body())
+        if body is None:
+            return error(400, "invalid_hook_body", "The body must be a JSON object")
+        try:
+            return run_hook(request.url.path[len("/sim/") :], body)
+        except TypeError, ValueError:
+            return error(400, "invalid_hook_body", "A value in the body has the wrong type")
+
+    def run_hook(name: str, body: dict) -> Response:
         g = device.garage
         if name == "button":
             g.press_button()
@@ -175,7 +184,7 @@ def make_app(device: Device, hooks: bool = True, background: bool = True) -> Sta
         if task:
             task.cancel()
 
-    methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     routes = []
     if hooks:
         routes.append(Route("/sim/{name}", hook, methods=methods))

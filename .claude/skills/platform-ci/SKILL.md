@@ -14,8 +14,9 @@ stay in sync. The garage firmware has its own workflow (`ci.yml`).
 
 ## `platform.yml`
 
-Runs on PRs to main and pushes to main **that touch `platform/**`, the workflow, or the garage README or
-`firmware/http.cpp`** (the simulator's contract; GitHub evaluates a
+Runs on PRs to main and pushes to main **that touch `platform/**`, the workflow, or the garage files the
+simulator ports or is held to** (README, `http.cpp`, `garage.cpp`/`.h`, `settings.cpp`, `json.h`,
+`config.h`; GitHub evaluates a
 PR's paths on its whole diff), and on published releases. Every job carries
 `if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'platform-v')`:
 `paths` does not apply to releases, and firmware releases (`garage-v…`) must not build the platform.
