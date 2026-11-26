@@ -134,3 +134,30 @@ the device folder, so the shipped `dist/garage-2.0.5.bin` was not overwritten.
   must come from `GARAGE_TOKEN` (dev-workflow says how to run it from the assistant's prompt).
 - Observations: Dependabot watches the toolchain's Debian base; the root README prerequisites point to
   the Docker toolchain; the platform's disposable-domain list header names its new workflow.
+
+## QA — APPROVED (round 2)
+
+**Date**: 2026-11-26 · reviewed at 7672470
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| B1 | `Makefile:7` `TTY := $(shell test -t 0 && echo -t)`, and `update`/`shell` use `-i $(TTY)`. `make -n` inside the image without a terminal gives `-i`, and under `script -qc` (a pty) gives `-i -t`. For real: `docker run -i` without a TTY works, and `-i -t` under a pty works | `docs/tasks/evidence/T004/qa/r2-tty.txt` | PASS |
+| B1b | Without a terminal and without `GARAGE_TOKEN`, `update.sh` stops at the token prompt (`stty: … Inappropriate ioctl`, exit 1) after building, before any request to the board. The dev-workflow note (`SKILL.md:45-49`) says to pass `GARAGE_TOKEN` in that case (by name, read from a file, never on the command line) | `docs/tasks/evidence/T004/qa/r2-tty.txt` | PASS |
+| 6 | actionlint on all workflows: no findings | `docs/tasks/evidence/T004/qa/r2-actionlint.txt` | PASS |
+| obs | Dependabot: a new `docker` entry for `/devices/garage-iot-controller/docker`; the YAML parses, there is no ecosystem/directory clash, and the directory holds the tracked Dockerfile | `docs/tasks/evidence/T004/qa/r2-dependabot.txt` | fixed |
+| obs | `README.md:72` prerequisites now point to the Docker toolchain; the platform's disposable-domain list header names `platform-disposable-domains.yml` | `docs/tasks/evidence/T003/qa/r2-grep.txt`, commit 7672470 | fixed |
+| 1–3, 7 | Round-1 results stand: 7672470 changes only the `update`/`shell` recipes and the help text, and leaves test/build/ota untouched | round 1 files | PASS |
+| 4 | USB upload to the bench board | — | NEEDS USER |
+| 5 | Network update | — | NEEDS USER |
+
+### NEEDS USER
+- `make` is still not installed on the host: install it first. Then DoD 4 (`make upload` on the bench
+  board, then `/api/v1/info`) and DoD 5 (`make update ip=<bench ip>` from a terminal, or with
+  `GARAGE_TOKEN` set from the prompt).
+
+### Observations (non-blocking)
+- Without a terminal and with no token set, the error is the bare `stty` message. A check in
+  `update.sh` (`[ -t 0 ] || { echo "set GARAGE_TOKEN" >&2; exit 2; }` before the prompt), placed before
+  the build, would fail faster and more clearly.
+- Dependabot's docker ecosystem tracks version tags and digests. `debian:trixie-slim` is a codename tag
+  without a digest, so the new entry will probably open no PRs until the `FROM` is pinned by digest.

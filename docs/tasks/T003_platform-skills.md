@@ -92,3 +92,19 @@ Also `frontend-design` (generic, absent here). Keep nexus-home's own `dev-workfl
 - B1: `CLAUDE.md` opening lines describe the platform as built in phases (plan linked), no longer "to be built".
 - Observations: the root README's middleware line says what phase 1 delivers and what phases 2–3 add; the
   `platform-frontend` headings keep the template's task ids as the history of where each rule came from.
+
+## QA — APPROVED (round 2)
+
+**Date**: 2026-11-26 · reviewed at 7672470
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| B1 | `CLAUDE.md:3-5` now describes the platform as FastAPI + React, built in phases, and links the plan (the plan's Phase 1–3 headings are at lines 168, 177 and 187). No "to be built", "to be implemented", "when implemented" or "stack to be decided" left in CLAUDE.md, README.md, the agents or dev-workflow, including phrases that wrap across lines | `docs/tasks/evidence/T003/qa/r2-grep.txt` | PASS |
+| 1 | `platform-patterns` still appears only in the plan's decision note | `docs/tasks/evidence/T003/qa/r2-grep.txt` | PASS |
+| 2–3 | Skills unchanged since round 1 (7672470 touches none of `.claude/skills/platform-*`), so the paths and claims results stand | `paths.txt`, `claims.txt` | PASS |
+| obs | `README.md:11` now says phase 1 delivers sign-in, users and roles, and lists what phases 2–3 add (matches the plan) | `docs/tasks/evidence/T003/qa/r2-grep.txt` | fixed |
+
+### Observations (non-blocking)
+- The `platform-frontend` headings keep "(T015)" and "(T009)". This is a stated decision (history of
+  where each rule came from) and is acceptable. "the template's T015" in line 111 makes the origin
+  explicit; the headings do not.

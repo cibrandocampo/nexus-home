@@ -7,8 +7,8 @@ Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Br
 |----|-------|------------|--------|----|
 | T001 | Template into `platform/` | — | Completed | Approved |
 | T002 | Platform CI, Dependabot and image publishing | T001 | Completed | Approved |
-| T003 | Platform skills and project docs | T002 | Completed | Returned (B1) |
-| T004 | Firmware toolchain in Docker | T003 | Completed (DoD 4–5: user, bench board) | Returned (B1) |
+| T003 | Platform skills and project docs | T002 | Completed | Approved |
+| T004 | Firmware toolchain in Docker | T003 | Completed (DoD 4–5: user, bench board) | Approved |
 | T005 | Garage device simulator | T001 | Pending | — |
 
 ```
