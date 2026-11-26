@@ -1,0 +1,12 @@
+/* Loaded by index.html before any script: the page background matches the system colour scheme from
+   the first paint. Kept outside the bundle on purpose; base.css takes over once the app starts. */
+:root {
+  color-scheme: light dark;
+  background: #fafafa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background: #14161d;
+  }
+}

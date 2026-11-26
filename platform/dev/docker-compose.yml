@@ -1,0 +1,94 @@
+# Development stack: local builds, bind mounts, live reload.
+# Run through the Makefile (`make dev-up`), which passes --env-file .env from the repository root.
+# Host ports are prefixed with 1 (dev-workflow skill: dev ports 1xxxx).
+
+name: ${PROJECT_NAME:-app}-dev
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./db-init.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.34
+    ports:
+      - "11025:1025"
+      - "18025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.backend
+    env_file: ../.env
+    environment:
+      ENV: development
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      TEST_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/app_test
+      # Every email goes to Mailpit (http://localhost:18025) in development.
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_TLS: none
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      SITE_URL: http://localhost:15173
+      ALLOW_SELF_SIGNUP: "true"
+      RATE_LIMIT_ENABLED: "false"
+      MAILPIT_API_URL: http://mailpit:8025
+      MAILPIT_SMTP_HOST: mailpit
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ../backend:/app
+    ports:
+      - "18000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.frontend
+    environment:
+      API_TARGET: http://backend:8000
+    volumes:
+      - ../frontend:/app
+      - frontend-node-modules:/app/node_modules
+    ports:
+      - "15173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5173/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:
+  frontend-node-modules:

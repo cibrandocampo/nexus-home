@@ -1,0 +1,181 @@
+{
+  "app": {
+    "name": "nexusHome"
+  },
+  "nav": {
+    "home": "Home",
+    "label": "Main",
+    "profile": "Profile",
+    "users": "Users"
+  },
+  "colorScheme": {
+    "label": "Colour scheme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "System"
+  },
+  "home": {
+    "title": "Welcome",
+    "text": "Start building your project from here."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "The page you are looking for does not exist.",
+    "back": "Go to the home page"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "generic": "Unexpected error. Please try again.",
+    "rate_limited": "Too many attempts. Please wait a moment and try again."
+  },
+  "language": {
+    "label": "Language"
+  },
+  "timezone": {
+    "label": "Time zone",
+    "nothingFound": "No time zone matches.",
+    "search": "Search time zone",
+    "detected": "Your browser is in {{zone}}.",
+    "useDetected": "Use it"
+  },
+  "user": {
+    "logout": "Log out"
+  },
+  "login": {
+    "title": "Sign in",
+    "titleSignup": "Sign in or create an account",
+    "emailHelp": "Enter your email. We will ask for your password or send you a code.",
+    "email": "Email",
+    "continue": "Continue",
+    "signIn": "Sign in",
+    "code": "Code",
+    "resend": "Send a new code",
+    "resendIn": "New code in {{seconds}} s",
+    "passwordFor": "Enter the password for",
+    "password": "Password",
+    "changeEmail": "Use another email",
+    "errors": {
+      "user_not_found": "There is no account with this email.",
+      "disposable_email": "Disposable email addresses cannot be used. Please use your usual email.",
+      "account_disabled": "This account is disabled. Contact an administrator.",
+      "invalid_credentials": "The code or password is not correct.",
+      "method_mismatch": "This account uses another sign-in method. Go back and try again.",
+      "locked": "Too many failed attempts. Try again in 15 minutes.",
+      "rate_limited": "Too many attempts. Please wait a moment and try again.",
+      "generic": "Something went wrong. Please try again.",
+      "invalid_email": "Enter a valid email address."
+    },
+    "codeDigit": "Code digit {{position}} of {{total}}",
+    "codeSentTo": "We have sent a 6-digit code to",
+    "codeValid": "It is valid for 10 minutes."
+  },
+  "welcome": {
+    "title": "Welcome!",
+    "text": "Tell us your name to finish setting up your account.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "save": "Continue",
+    "required": "Required"
+  },
+  "waiting": {
+    "title": "Waiting for access",
+    "text": "Your account {{email}} is ready, but an administrator has to give you access before you can use the application.",
+    "hint": "You will be able to sign in as usual once access is granted.",
+    "profile": "Edit your profile"
+  },
+  "common": {
+    "loading": "Loading",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "close": "Close"
+  },
+  "roles": {
+    "none": "Waiting for access",
+    "user": "User",
+    "admin": "Administrator"
+  },
+  "profile": {
+    "title": "Profile",
+    "saveName": "Save name",
+    "saved": "Profile saved.",
+    "preferences": "Preferences",
+    "editName": "Edit name",
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Repeat the new password",
+      "rules": "At least 10 characters, not only digits, not your email.",
+      "mismatch": "The passwords do not match.",
+      "change": "Change password",
+      "saved": "Password saved. Your other sessions have been closed.",
+      "errors": {
+        "invalid_credentials": "The current password is not correct.",
+        "weak_password": "This password is too weak. Check the rules under the field.",
+        "rate_limited": "Too many attempts. Please wait a moment and try again.",
+        "generic": "The password could not be saved. Please try again."
+      }
+    }
+  },
+  "users": {
+    "title": "Users",
+    "search": "Search",
+    "all": "All",
+    "role": "Role",
+    "status": "Status",
+    "name": "Name",
+    "actions": "Actions",
+    "actionsFor": "Actions for {{email}}",
+    "filters": {
+      "open": "Filters",
+      "active": "Filters ({{count}})"
+    },
+    "activeState": "Active",
+    "inactiveState": "Disabled",
+    "active": "Active (can sign in)",
+    "empty": "No users match these filters.",
+    "grant": "Grant access",
+    "granted": "{{email}} now has access.",
+    "method": {
+      "label": "Sign-in method",
+      "otp": "Code by email",
+      "password": "Password"
+    },
+    "create": {
+      "open": "New user",
+      "title": "New user",
+      "submit": "Create user",
+      "done": "User created."
+    },
+    "edit": {
+      "title": "Edit user",
+      "saved": "Changes saved."
+    },
+    "password": {
+      "title": "Set password",
+      "help": "{{email}} will sign in with this password. Their open sessions will be closed.",
+      "submit": "Set password",
+      "saved": "Password set."
+    },
+    "delete": {
+      "title": "Delete user",
+      "confirm": "Delete {{email}}? This cannot be undone.",
+      "submit": "Delete",
+      "done": "{{email}} has been deleted."
+    },
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page"
+    },
+    "errors": {
+      "email_taken": "There is already a user with this email.",
+      "last_admin": "At least one active administrator must remain.",
+      "cannot_delete_self": "You cannot delete your own account.",
+      "password_required": "Set a password for this sign-in method.",
+      "weak_password": "This password is too weak: at least 10 characters, not only digits, not the email.",
+      "user_not_found": "This user no longer exists.",
+      "validation_error": "Check the fields and try again.",
+      "forbidden": "You no longer have permission for this.",
+      "generic": "Something went wrong. Please try again."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+Hola{% if first_name %}, {{ first_name }}{% endif %}:
+
+Tu código para entrar en {{ app_name }} es:
+
+    {{ code }}
+
+Es válido durante {{ minutes }} minuto{% if minutes != 1 %}s{% endif %}. Si no has intentado entrar, ignora este correo.
+
+{{ site_url }}

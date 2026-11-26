@@ -1,0 +1,40 @@
+/* Name and email take the room left by the picture; a long address wraps instead of overflowing. */
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  overflow-wrap: anywhere;
+}
+
+.email {
+  overflow-wrap: anywhere;
+}
+
+/* Preferences sit under a divider (visual system: borders, no shadows), one above the other. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+  padding-top: var(--mantine-spacing-xl);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+/* Every preference control has the same height, generous to tap, with the app's normal text size. */
+.choice {
+  min-height: 2.625rem; /* Mantine's md input height (42 px) */
+  align-items: stretch;
+}
+
+.field {
+  height: 2.625rem;
+}
+
+/* The options (and the selection pill) fill that height. */
+.choiceLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}

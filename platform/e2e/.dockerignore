@@ -1,0 +1,3 @@
+# Only the runner's own files go into the playwright image.
+artifacts/
+node_modules/

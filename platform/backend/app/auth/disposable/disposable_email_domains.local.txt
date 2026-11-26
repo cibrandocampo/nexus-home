@@ -1,0 +1,2 @@
+# Disposable email domains maintained by hand, one per line, added to the synced list.
+# Subdomains of a listed domain are blocked too.

@@ -1,0 +1,1 @@
+Dámosche a benvida a {{ app_name }}: o teu código é {{ code }}

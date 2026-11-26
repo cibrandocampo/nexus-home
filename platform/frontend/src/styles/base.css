@@ -1,0 +1,102 @@
+/* Loaded with the app's CSS, before React renders: the page background is right from the first
+   paint in both schemes (no white flash in dark mode), and native UI follows the scheme. */
+:root {
+  color-scheme: light dark;
+  background-color: #fafafa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background-color: #14161d;
+  }
+}
+
+/* An explicit choice in the colour-scheme menu wins over the OS preference. */
+:root[data-mantine-color-scheme='light'] {
+  color-scheme: light;
+  background-color: #fafafa;
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  color-scheme: dark;
+  background-color: #14161d;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--app-color-heading);
+}
+
+/* Form controls need 3:1 contrast with their background (WCAG 1.4.11); dividers keep the
+   lighter default border. Focused and invalid controls keep Mantine's focus and error borders. */
+.mantine-Input-input:not([data-error]):not(:focus) {
+  --input-bd: var(--app-color-control-border);
+}
+
+/* A clear focus ring on text fields and code digits (WCAG 2.4.7): the border colour change alone is too
+   subtle. An outline also survives forced-colours mode. */
+.mantine-Input-input:focus {
+  outline: 2px solid var(--mantine-color-anchor);
+  outline-offset: 1px;
+}
+
+/* Dark mode keeps nudge's light lavender as the filled colour (shade 3), so text and icons on a fill must be
+   dark. Mantine draws them with `--mantine-color-white`; on the elements that carry a fill, "white" means the
+   dark on-filled colour. Matched by state (filled variant, selected option, active control) rather than by
+   component, so variants without a fill (light, outline, dot, subtle…) keep Mantine's colours. The override
+   must sit on the element whose CSS reads the variable: a child would get the value after it was resolved. */
+:root[data-mantine-color-scheme='dark']
+  :is(
+    [data-variant='filled'],
+    /* The default variant is filled and Mantine writes no data-variant for it. */
+    :is(
+        .mantine-Button-root,
+        .mantine-ActionIcon-root,
+        .mantine-Badge-root,
+        .mantine-ThemeIcon-root
+      ):not([data-variant]),
+    [data-combobox-selected],
+    .mantine-Checkbox-root:not([data-variant='outline']),
+    .mantine-CheckboxIndicator-indicator:not([data-variant='outline']),
+    .mantine-Radio-root:not([data-variant='outline']),
+    .mantine-RadioIndicator-indicator:not([data-variant='outline']),
+    .mantine-Pagination-control[data-active],
+    .mantine-Tabs-tab[data-active],
+    .mantine-Progress-section,
+    .mantine-Indicator-indicator,
+    .mantine-Stepper-stepIcon,
+    .mantine-Stepper-stepCompletedIcon,
+    .mantine-NavLink-root[data-active],
+    .mantine-SegmentedControl-root
+  ) {
+  --mantine-color-white: var(--app-color-on-filled);
+}
+
+/* Switch: the thumb is a shape on the track, not text. Dark mode: white on the dark unchecked track, dark on
+   the lavender checked one. Light mode: the unchecked track takes the control border colour so the white
+   thumb keeps 3:1 (WCAG 1.4.11) and the optional track label is dark. */
+:root[data-mantine-color-scheme='dark'] .mantine-Switch-input:checked + .mantine-Switch-track {
+  --mantine-color-white: var(--app-color-on-filled);
+}
+
+:root[data-mantine-color-scheme='light']
+  .mantine-Switch-input:not(:checked)
+  + .mantine-Switch-track {
+  background-color: var(--app-color-control-border);
+  border-color: var(--app-color-control-border);
+  --switch-text-color: #0a0a0a;
+}
+
+/* Height of the bottom navigation bar (BottomNav); pages reserve it plus the safe area. */
+:root {
+  --nav-h: 64px;
+  /* The scrollbar's room is always reserved: moving between a short page and a long one does not
+     shift the layout sideways. */
+  scrollbar-gutter: stable;
+}
+
+/* Keyboard focus and scrolled-to targets must not end up under the bottom navigation (WCAG 2.4.11). */
+:root:has([data-bottom-nav]) {
+  scroll-padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
+}

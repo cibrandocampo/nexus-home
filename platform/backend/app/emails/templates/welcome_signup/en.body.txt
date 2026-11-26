@@ -1,0 +1,9 @@
+Welcome to {{ app_name }}!
+
+To confirm your email and finish creating your account, enter this code:
+
+    {{ code }}
+
+It is valid for {{ minutes }} minute{% if minutes != 1 %}s{% endif %}. If you did not sign up, you can ignore this email: no account will be activated.
+
+{{ site_url }}

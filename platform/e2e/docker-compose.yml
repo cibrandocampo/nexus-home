@@ -1,0 +1,80 @@
+# End-to-end stack: the production image (built from the root Dockerfile), a throwaway Postgres,
+# Mailpit for the sign-in codes and the Playwright runner. Run with `make e2e`, which tears it all
+# down afterwards. Nothing here is for deployment: the secrets are fixed test values.
+
+name: ${PROJECT_NAME:-app}-e2e
+
+x-admin: &admin
+  ADMIN_EMAIL: admin@example.com
+  ADMIN_PASSWORD: e2e-admin-password-1
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+      POSTGRES_DB: e2e
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.34
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Not called `app`: Chromium preloads HSTS for the whole .app top-level domain, so http://app
+  # would always be forced to https.
+  server:
+    build:
+      context: ..
+      args:
+        APP_VERSION: e2e
+    environment:
+      <<: *admin
+      ENV: production
+      APP_NAME: E2E App
+      DATABASE_URL: postgresql+asyncpg://e2e:e2e@db:5432/e2e
+      SECRET_KEY: e2e-only-secret-key-not-for-deployment-0123456789
+      COOKIE_SECURE: "false"
+      SITE_URL: http://server:8000
+      ALLOW_SELF_SIGNUP: "true"
+      RATE_LIMIT_ENABLED: "false"
+      EMAIL_FROM: E2E App <no-reply@example.com>
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_TLS: none
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  playwright:
+    build:
+      context: .
+    environment:
+      <<: *admin
+      BASE_URL: http://server:8000
+      MAILPIT_URL: http://mailpit:8025
+      CI: ${CI:-}
+      HOME: /tmp
+    # Files written to the bind mount (the report) belong to the host user.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      # Report (artifacts/report) and failure traces (artifacts/test-results); `make e2e` creates it.
+      - ./artifacts:/e2e/artifacts
+    depends_on:
+      server:
+        condition: service_healthy

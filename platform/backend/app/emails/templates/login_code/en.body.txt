@@ -1,0 +1,9 @@
+Hello{% if first_name %}, {{ first_name }}{% endif %},
+
+Your code to sign in to {{ app_name }} is:
+
+    {{ code }}
+
+It is valid for {{ minutes }} minute{% if minutes != 1 %}s{% endif %}. If you did not try to sign in, you can ignore this email.
+
+{{ site_url }}

@@ -1,0 +1,36 @@
+/* The search takes the row's free width up to a comfortable size; filters sit next to it. */
+.search {
+  flex: 1;
+  max-width: 320px;
+}
+
+/* Name and email share a cell, so the table fits a phone without scrolling sideways. */
+.who {
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  width: 1%;
+  text-align: end;
+}
+
+/* On phones the role column takes only what its widest badge needs (badges stack); name and email
+   get the rest. */
+@media (max-width: 36em) {
+  .table :is(th, td) {
+    padding-inline: 4px;
+  }
+
+  .who {
+    width: 100%;
+  }
+
+  .role {
+    width: 1%;
+  }
+}
+
+/* Badges are never cut: a narrow role column stacks them instead. */
+.badges > * {
+  min-width: max-content;
+}

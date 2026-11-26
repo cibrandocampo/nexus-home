@@ -64,3 +64,17 @@ the same compose commands the targets run and say so in the evidence.
 | `platform/**` | CREATE (copied, renamed) |
 | `platform/TEMPLATE.md`, `platform/README.md` | CREATE |
 | `.gitignore` | MODIFY |
+
+## Implementation notes
+- Copied with `git archive af8fea9` (176 files) plus `TEMPLATE.md` and `README.md`.
+- The template's `.gitignore` is kept as `platform/.gitignore` (a nested ignore file, paths relative to
+  `platform/`) instead of scoping it in the root one; `docs/tasks/evidence/` dropped from it (the root
+  file ignores it). `git add -n platform` lists 178 files, nothing generated.
+- Renamed: `.env.example` (`PROJECT_NAME=nexus`, `APP_NAME=nexusHome`, `DOCKER_IMAGE=cibrandocampo/nexus-home`),
+  `app.name` in en/es/gl, `<title>`, backend default `app_name`, `App.test.jsx`, the configuration doc example.
+- Makefile: header points to this repository's rule; `VERSION` uses `git describe --match 'platform-v*'`
+  without the prefix; the `hooks` target is gone (no `scripts/`).
+- The rename exposed a fragile end-to-end selector: `getByRole('link', { name: 'Home' })` also matched
+  the brand link "nexusHome". Now `exact: true`. The same latent issue is in the template (any app
+  name containing "Home"): port it back.
+- `make` is not installed on the host: every check ran the targets' compose commands directly.

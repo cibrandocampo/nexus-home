@@ -1,0 +1,9 @@
+¡Te damos la bienvenida a {{ app_name }}!
+
+Para confirmar tu correo y terminar de crear tu cuenta, introduce este código:
+
+    {{ code }}
+
+Es válido durante {{ minutes }} minuto{% if minutes != 1 %}s{% endif %}. Si no te has registrado, ignora este correo y no se activará ninguna cuenta.
+
+{{ site_url }}

@@ -1,0 +1,36 @@
+/* Same geometry as the app shell's Container (1080 px including 16 px padding) so the brand does not move
+   after login. */
+.page {
+  min-height: 100dvh;
+  padding-bottom: 24px;
+}
+
+.top,
+.column {
+  box-sizing: border-box;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+
+.top {
+  height: 56px;
+}
+
+.column {
+  width: 100%;
+  padding-top: clamp(48px, 14vh, 140px);
+}
+
+/* On wide screens the form sits in a narrow column aligned with the brand; on phones it is
+   centred, since a column off to one side of a small screen looks misplaced. */
+.column > * {
+  max-width: 360px;
+}
+
+@media (max-width: 48em) {
+  .column > * {
+    width: 100%;
+    margin-inline: auto;
+  }
+}

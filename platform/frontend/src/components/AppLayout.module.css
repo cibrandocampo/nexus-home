@@ -1,0 +1,9 @@
+.header {
+  background: var(--mantine-color-body);
+  border-bottom-color: var(--mantine-color-default-border);
+}
+
+/* Clear the fixed bottom navigation and the system's gesture area. */
+.content {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 2rem);
+}
