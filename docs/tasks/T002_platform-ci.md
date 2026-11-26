@@ -61,3 +61,17 @@ New `.github/workflows/platform.yml`, adapted from the template's `ci.yml` (`af8
 |------|--------|
 | `.github/workflows/platform.yml`, `platform-weekly-rebuild.yml`, `platform-disposable-domains.yml` | CREATE |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml` | MODIFY / CREATE |
+
+## Implementation notes
+- `platform.yml`: the template's `ci.yml` (`af8fea9`) with `defaults.run.working-directory: platform`,
+  `context: platform`, the report path `platform/e2e/artifacts/`, and the same `if:` on every job (on a
+  release run, only `platform-v…` tags). `paths` filters do not apply to release events, hence the guard.
+- Version: `git describe --tags --match 'platform-v*' --always`, prefix removed (also in the Makefile).
+- Tags: `type=match,pattern=platform-v(\d+\.\d+\.\d+.*),group=1`; dry run (`tags.txt`):
+  `platform-v1.2.0` → `1.2.0`, `platform-v1.2.0-rc.1` → `1.2.0-rc.1`, `garage-v2.0.5` and `v1.0.0` → none.
+- Weekly rebuild: the `stable` channel takes the newest non-draft, non-prerelease `platform-v…` release
+  (jq checked on sample data: garage releases ignored); none yet → skip (checked against the repository).
+- Disposable domains: the template's workflow with the list under `platform/`, own PR branch.
+- DoD 2 adjusted: GitHub evaluates `paths` of a PR on its whole diff, and this PR touches both areas, so
+  both workflows run here. The filters are checked by review; the first platform-only or devices-only
+  PR after the merge confirms them.

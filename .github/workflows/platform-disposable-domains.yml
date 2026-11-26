@@ -1,0 +1,45 @@
+name: Platform disposable email domains
+
+on:
+  schedule:
+    - cron: "30 6 * * 0" # Sundays 06:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download the upstream list
+        env:
+          URL: https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf
+          FILE: platform/backend/app/auth/disposable/disposable_email_domains.txt
+        run: |
+          curl -fsSL "$URL" -o /tmp/list.conf
+          lines=$(grep -cE '^[a-z0-9.-]+$' /tmp/list.conf)
+          if [ "$lines" -lt 1000 ]; then
+            echo "Upstream list has only $lines valid lines: refusing to replace ours" >&2
+            exit 1
+          fi
+          {
+            echo "# Disposable email domains, synced weekly from"
+            echo "# https://github.com/disposable-email-domains/disposable-email-domains"
+            echo "# by .github/workflows/platform-disposable-domains.yml. Do not edit: add domains to"
+            echo "# disposable_email_domains.local.txt instead."
+            grep -E '^[a-z0-9.-]+$' /tmp/list.conf
+          } > "$FILE"
+
+      - name: Open a pull request when the list changed
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: chore/platform-sync-disposable-email-domains
+          commit-message: "chore(platform): sync disposable email domains"
+          title: "chore(platform): sync disposable email domains"
+          body: Weekly update of the disposable email domain list from upstream.
+          labels: dependencies
+          delete-branch: true
