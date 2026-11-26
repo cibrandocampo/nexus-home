@@ -9,8 +9,9 @@ it finds and registers the devices, keeps their state and history, sends command
 settings and updates their firmware. Home Assistant integration comes later and must fit on top
 without rework.
 
-It is built from the `fastapi-react-template` (see [platform-template.md](platform-template.md)),
-which provides login, users, roles, languages, theme, Docker and CI.
+It is built from [`cibrandocampo/fastapi-react-template`](https://github.com/cibrandocampo/fastapi-react-template)
+(main at `af8fea9`), which provides login (email code or password), users, roles, languages, per-user
+theme and time zone, Docker, end-to-end tests and CI.
 
 ## Decisions confirmed with the user
 
@@ -26,6 +27,19 @@ which provides login, users, roles, languages, theme, Docker and CI.
 | Web access | HTTPS through the Synology (DSM) reverse proxy; devices download firmware over plain HTTP from the app's LAN port | Secure session cookies; the WiFi module only speaks plain HTTP without redirects |
 | Device page | Generic entity cards + type-specific details from the driver | Keeps what the garage's own page shows |
 | Home Assistant | Not now; design leaves room for it (MQTT discovery or a custom integration, to decide later) | Not a priority |
+| Delivery (2026-11-26) | Three PRs, one per phase (below), each on its own branch `feat/platform-<phase>` | One PR for twelve steps is too big to review |
+| Image (2026-11-26) | Docker Hub `cibrandocampo/nexus-home`; `latest` from main, `<version>` + `stable` from a release tagged `platform-v<version>` | Repository name; the `platform-` prefix keeps platform releases apart from firmware ones (`garage-v…`) |
+
+### Decided while dividing (2026-11-26)
+
+- **Template copy**: copied once into `platform/`; `platform/TEMPLATE.md` records the template commit,
+  and later template fixes are ported by hand (no subtree: the copy diverges on purpose).
+- **Skills**: the template's stack skills come in as `platform-architecture`, `platform-api`,
+  `platform-backend`, `platform-frontend`, `platform-security` and `platform-ci`, with paths under
+  `platform/`; `dev-workflow` gains the platform's commands. This replaces the single
+  `platform-patterns` skill of the first draft: the template's split already works.
+- **Times**: event history and device times are stored in UTC and shown in each user's time zone (the
+  template's profile setting).
 
 ## Design
 
@@ -144,27 +158,35 @@ network change; the sound system (Arduino UNO without WiFi); automations; notifi
 | `platform/` | New: app created from the template + device modules |
 | `.github/workflows/` | Platform jobs (lint, tests, E2E, image), firmware release on tags |
 | `devices/garage-iot-controller` | No firmware change; README points to the platform and the release flow |
-| `.claude/` | `platform-patterns` skill (from the template's backend/frontend skills) |
+| `.claude/` | `platform-*` skills (from the template's stack skills); CLAUDE.md and the QA agent point to them |
 | Root README | Platform section, deployment |
 
 ## Implementation order
 
-1. Bring the template into `platform/`, CI jobs, `platform-patterns` skill, Docker Hub name.
+Three phases, one PR each. Every phase leaves `main` working and deployable.
+
+**Phase 1 — Base** (`feat/platform-base`)
+1. Bring the template into `platform/` (renamed to nexusHome), its CI jobs, Dependabot entries and
+   image publishing, and the `platform-*` skills.
 2. Firmware toolchain into Docker (user decision 2026-11-25: nothing runs on the host): an image with
    `g++`, `arduino-cli` and the `arduino:renesas_uno` 1.6.0 core for host tests, build and `.ota`; USB upload
    to the bench board from a container (`--device`); scripts and CI use it.
 3. Device simulator (fake garage implementing `/api/v1` from the README, with doors that move in
    simulated time), used by tests, by the dev compose and by E2E.
+
+**Phase 2 — Devices** (`feat/platform-devices`)
 4. Device model, token encryption, manual add, roles `user`/`admin` checks.
 5. Discovery scan.
 6. Polling, online/offline, event bus, state API.
 7. Event history (collection, de-duplication, retention, API).
 8. Commands and their audit.
 9. Settings and token rotation.
-10. Firmware: release workflow in nexus-home, GitHub sync, upload + `.bin` → `.ota`, update flow.
-11. Frontend: device list, device page (entities, commands, state), history, scan/add, settings,
-    firmware pages.
-12. E2E against the simulator; deployment docs; checks on the bench board.
+10. Frontend: device list, device page (entities, commands, state), history, scan/add, settings.
+11. E2E against the simulator for all of the above; bench-board checks.
+
+**Phase 3 — Firmware** (`feat/platform-firmware`)
+12. Release workflow in nexus-home (tag `garage-v<version>`), GitHub sync, upload + `.bin` → `.ota`,
+    update flow, firmware pages, their E2E; deployment docs; a real OTA update on the bench board.
 
 ## Testing strategy
 
