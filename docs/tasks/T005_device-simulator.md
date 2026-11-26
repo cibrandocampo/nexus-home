@@ -183,3 +183,31 @@ and that every error code in the README's error table is produced by some reques
   and `config.h` too; O7 Dockerfile comment; O8 malformed hook bodies answer 400 `invalid_hook_body`;
   O9 the power-cycle difference is described in the simulator README.
 - Evidence: `tests-r2.txt` (lint clean; 90 passed, contract included).
+
+## QA — APPROVED (round 2)
+
+**Date**: 2026-11-26 · reviewed `f908829` + `474204d`
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 1 | Lint (ruff check + format) and the simulator tests as `make test-simulator` runs them, 3 runs: 90 passed each, lines 100 %, total 99 % (branch partials only: device.py 120->122, garage.py 283->exit, 369->374) | `docs/tasks/evidence/T005/qa/tests-r2.txt` | PASS |
+| 2 | B1: tests added for `/door/open` while closing (409), open after a stopped close (one pulse), reversal refused in the gap, auto light leaving a hand-held light, `set_door` to the same state (commented as unreachable, as in the firmware) | `docs/tasks/evidence/T005/qa/tests-r2.txt` (no missing lines) | PASS |
+| 3 | B2: `sim/fwjson.py` compared line by line with `json.h` (`find`, `str`, `flag`, `num`) and `http.cpp` `findDuration`; round-1 probes re-run: Jardín raw 200 / escaped 400 `invalid_name`, 20 × ñ 400, 16 × ñ 200, escaped `\n` and `\u0001` 200, raw 0x01 400, non-JSON body 200 `ok`, body `duration` 30.5 → 30 s, query `600abc` → 600 s, overflow → 400, query without `duration` falls back to the body, `30.0` and `1e3` → `invalid_open_time` | `docs/tasks/evidence/T005/qa/fidelity-probes-r2.txt` | PASS |
+| 4 | B3: `configure()` re-decides night with `fresh=True`; P15 now: night_level 700 → 695 at level 690 → raw night false at once, `day` logged after the debounce | `docs/tasks/evidence/T005/qa/fidelity-probes-r2.txt` | PASS |
+| 5 | O6 drift in scratch copies mounted as `/contract`: `respondError(423, "door_busy", …)` → 1 failed (`assert 409 == 423`); `unauthorized` renamed only in `http.cpp` → 1 failed; README State key renamed → 2 failed; real files → 12 passed. Path filter lists `garage.cpp`/`.h`, `settings.cpp`, `json.h`, `config.h` on push and pull_request | `docs/tasks/evidence/T005/qa/contract-r2.txt` | PASS |
+| 6 | O1–O5, O7–O9 on the rebuilt dev simulator (code hashes equal to the repo): MAC `02:00:00:5E:1A:0A` for `garage-5e1a0a`; `rev` 1 after boot; OPTIONS → JSON 405 with `no-store`; errors carry `no-store`; `testing_wifi` answers the old network with `wifi_trying: true`, silent `SIM_RESTART_S`, then `wifi_up` + `wifi_changed` (as `net.cpp` `onConnected`, no `wifi_down` since `tryNetwork` clears `up` directly); bad hook body → 400 `invalid_hook_body`; README "Not simulated" and request-body section, Dockerfile comment, platform-ci skill updated | `docs/tasks/evidence/T005/qa/session-r2.txt`, `docs/tasks/evidence/T005/qa/fidelity-probes-r2.txt` | PASS |
+| 7 | Full suites: backend lint + 325 tests (100 %), frontend lint + 128 tests, firmware host tests; PR #6 checks green (End-to-end pending at the time of the check) | `docs/tasks/evidence/T005/qa/full-r2.txt`, `docs/tasks/evidence/T005/qa/firmware-tests-r2.txt` | PASS |
+
+### Observations (non-blocking)
+- `sim/fwjson.py:76` parses the four `\u` digits with Python `int(…, 16)`, which accepts `_` (`\u0_7f` → 0x7F, 200);
+  `strtoul` stops at `_` and the board refuses it (400 `invalid_name`). Sign, leading space and `0x` behave
+  alike in both. No client sends this.
+- `net.cpp` is not in the workflow path filter, though the simulator mirrors its boot `wifi_up`, the
+  WiFi-change events and the id/MAC relation. Worth adding with the next touch.
+- For phase 2: the board answers a non-ASCII `\u` escape in `name` with `invalid_name` / "Name must not be
+  empty" (firmware message, faithfully reproduced), so the platform should send raw UTF-8 and map that
+  error to its own message.
+
+## After QA round 2
+- The two notes taken up: `\u` escapes with `_` are refused as `strtoul` does (test added), and
+  `net.cpp` (boot and WiFi events, id from the MAC) joins the Platform workflow path filter.

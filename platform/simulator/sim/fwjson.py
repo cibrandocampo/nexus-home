@@ -73,7 +73,9 @@ def string(body: bytes, key: str, size: int) -> tuple[Result, str]:
                 digits = body[p : p + 4]
                 p += 4
                 try:
-                    v = int(digits, 16) if len(digits) == 4 else -1
+                    # strtoul(base 16) as the board; unlike int(), it takes no "_" separators.
+                    ok = len(digits) == 4 and b"_" not in digits
+                    v = int(digits, 16) if ok else -1
                 except ValueError:
                     v = -1
                 if v <= 0 or v > 0x7F:

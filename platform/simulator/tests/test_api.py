@@ -174,6 +174,7 @@ def test_names_are_bytes_as_the_firmware_reads_them(board: Board):
     assert code(raw_settings(board, b'{"name": "Jard\\u00edn"}')) == (400, "invalid_name")
     assert code(raw_settings(board, b'{"name": "A\\u0000"}')) == (400, "invalid_name")
     assert code(raw_settings(board, b'{"name": "A\\uzzzz"}')) == (400, "invalid_name")
+    assert code(raw_settings(board, b'{"name": "A\\u0_7f"}')) == (400, "invalid_name")
     assert code(raw_settings(board, b'{"name": "A\\q"}')) == (400, "invalid_name")
     assert code(raw_settings(board, b'{"name": "unterminated')) == (400, "invalid_name")
     assert code(raw_settings(board, b'{"name": "A\\')) == (400, "invalid_name")

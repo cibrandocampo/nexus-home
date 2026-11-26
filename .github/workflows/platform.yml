@@ -7,7 +7,7 @@ name: Platform
 # DOCKERHUB_TOKEN secrets (and the DOCKER_IMAGE variable): `latest` from main, `<version>` and
 # `stable` from a published platform release. Without them it is built (amd64) and not pushed.
 
-# The simulator ports the garage firmware (garage.cpp, settings.cpp, json.h, config.h) and is held to
+# The simulator ports the garage firmware (garage.cpp, settings.cpp, json.h, config.h, net.cpp) and is held to
 # its contract (README, http.cpp): a change to any of them must re-run the simulator's tests,
 # hence those paths.
 on:
@@ -23,6 +23,7 @@ on:
       - devices/garage-iot-controller/firmware/settings.cpp
       - devices/garage-iot-controller/firmware/json.h
       - devices/garage-iot-controller/firmware/config.h
+      - devices/garage-iot-controller/firmware/net.cpp
   pull_request:
     branches: [main]
     paths:
@@ -35,6 +36,7 @@ on:
       - devices/garage-iot-controller/firmware/settings.cpp
       - devices/garage-iot-controller/firmware/json.h
       - devices/garage-iot-controller/firmware/config.h
+      - devices/garage-iot-controller/firmware/net.cpp
   release:
     types: [published]
 
