@@ -182,4 +182,4 @@ and that every error code in the README's error table is produced by some reques
   `http.cpp`, and the Platform workflow runs on changes to `garage.cpp`/`.h`, `settings.cpp`, `json.h`
   and `config.h` too; O7 Dockerfile comment; O8 malformed hook bodies answer 400 `invalid_hook_body`;
   O9 the power-cycle difference is described in the simulator README.
-- Evidence: `tests-r2.txt` (lint clean; 89 + 12 contract tests in one run).
+- Evidence: `tests-r2.txt` (lint clean; 90 passed, contract included).
