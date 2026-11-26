@@ -61,3 +61,19 @@ The scripts stay runnable inside the image; `tools/build.sh` no longer needs the
 | `devices/garage-iot-controller/docker/Dockerfile`, `devices/garage-iot-controller/Makefile` | CREATE |
 | `devices/garage-iot-controller/tools/build.sh`, `README.md` | MODIFY |
 | `.github/workflows/ci.yml`, `.claude/skills/dev-workflow/SKILL.md`, `CLAUDE.md` | MODIFY |
+
+## Implementation notes
+- Image `nexus-garage-toolchain` (Debian trixie-slim, `g++` 14, `python3` 3.13, `arduino-cli` 1.6.0 with
+  its published SHA-256, core `arduino:renesas_uno@1.6.0` installed at build time under `/opt/arduino`,
+  world-writable so the container can run as the host user).
+- Makefile targets: `test`, `build`, `ota`, `upload` (checks the port exists, passes it with `--device`
+  and its group; `flags=` for the watchdog self-test builds the README describes), `update` (host
+  network, `-it`, `GARAGE_TOKEN`/`OTA_PORT` passed by name), `smoke`, `shell`, `help`. `IMAGE_BUILT=1`
+  skips the image build (CI builds it with the Actions cache first). Checked with `make -n` and
+  `make help` inside the image (no `make` on the host).
+- Build (`build.txt`): host tests pass; `tools/build.sh` in the container gives 114 084 bytes for
+  `2.0.5` against 114 108 for the host-built `dist/garage-2.0.5.bin` (0.02 %); `.ota` written and
+  decoded back by `make_ota.py`.
+- DoD 4 and 5 wait for the user: the bench board is not plugged in (`/dev/ttyACM0` absent) and does not
+  answer at 10.1.3.114. Run `! make upload` with the board on USB, then `! make update ip=<bench ip>`.
+- `grep.txt`: no current mention of the snap, `bossac` or host toolchain.

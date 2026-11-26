@@ -29,11 +29,10 @@ the plan or a sensible default already answer — decide, and say what you decid
 
 ## Never run on the host
 
-Everything runs in Docker: project runtimes, tests, linters, and the CLIs third-party skills call (their
-commands are adapted to a throwaway container, never run on the host). **Current exception, pending a
-decision**: the firmware toolchain (`g++` host tests, `arduino-cli` build and USB upload) still runs on the
-host; moving it into containers is a task of the platform plan (`docs/plans/platform-middleware.md`).
-The platform and everything new must not run on the host.
+Everything runs in Docker: project runtimes, tests, linters, the firmware toolchain (`make` in the device
+folder: host tests, builds, `.ota` files, USB uploads, network updates), and the CLIs third-party skills
+call (their commands are adapted to a throwaway container, never run on the host). The host only runs
+`docker`, `git`, `gh`, `make`, `curl` and `openssl rand`.
 
 ## Development paths
 

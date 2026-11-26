@@ -345,15 +345,17 @@ open and close are offered.
 
 ## Build and upload
 
+The toolchain runs in Docker (`docker/Dockerfile`: `g++`, `python3`, `arduino-cli` 1.6.0 and the
+`arduino:renesas_uno` 1.6.0 core); the computer only needs Docker, `make` and `git`. From this folder:
+
 ```sh
-arduino-cli core install arduino:renesas_uno
-arduino-cli compile --fqbn arduino:renesas_uno:unor4wifi firmware
-arduino-cli upload  --fqbn arduino:renesas_uno:unor4wifi -p /dev/ttyACM0 firmware
+make build                      # host tests + compile -> dist/garage-<FW_VERSION>.bin
+make upload                     # compile and flash over USB (port=/dev/ttyACM0 to change it)
+make help                       # every target
 ```
 
-On 64-bit Linux, the `arduino-cli` snap may install a 32-bit `bossac` that cannot run
-(`libstdc++.so.6: cannot open shared object file`). Replace it with the 64-bit build of the same
-version from Arduino's package index (`bossac-1.9.1-arduino5-linux64.tar.gz`).
+The image is built on first use. The container runs as you, so `build/` and `dist/` stay yours, and
+`make upload` passes the serial port through (`--device`).
 
 With the Arduino IDE, open `firmware/firmware.ino` and select the board "Arduino UNO R4 WiFi".
 No extra libraries are needed. Pins and default timings are in `firmware/config.h`.
@@ -364,8 +366,11 @@ A newly flashed board needs the first setup (see above); a board already set up 
 No cable needed: from a computer on the same network,
 
 ```sh
-tools/update.sh <controller-ip> [version]     # token from $GARAGE_TOKEN, or asked for
+make update ip=<controller-ip> [version=x.y.z]     # token from $GARAGE_TOKEN, or asked for
 ```
+
+It runs `tools/update.sh` in the toolchain container on the host's network (so the controller can reach
+the file server), which:
 
 1. Runs the host tests and builds the firmware (`tools/build.sh` → `dist/garage-<version>.bin`).
 2. Converts it into Arduino's `.ota` format (`tools/make_ota.py`: header, CRC and LZSS compression; the script
@@ -392,11 +397,12 @@ Limits of the WiFi module firmware (checked on the bench with module firmware 0.
 
 ## Tests
 
-- `test/run.sh` compiles the door and light logic, the watchdog, the settings storage and the JSON readers for
-  the PC and runs them against simulated inputs and a simulated flash (needs `g++`).
-- `test/api_smoke.sh <ip> [token]` checks a running device without moving the door.
-- Watchdog on the bench: build with `--build-property "compiler.cpp.extra_flags=-DWATCHDOG_SELFTEST=1"`
-  (main loop hangs 30 s after boot: reset about 60 s later) or `=2` (interrupts stop: reset within 5 s).
+- `make test` (`test/run.sh`) compiles the door and light logic, the watchdog, the settings storage and the
+  JSON readers for the PC and runs them against simulated inputs and a simulated flash.
+- `make smoke ip=<ip>` (`test/api_smoke.sh`, token from `$GARAGE_TOKEN`) checks a running device without
+  moving the door.
+- Watchdog on the bench: `make upload flags=-DWATCHDOG_SELFTEST=1` (main loop hangs 30 s after boot: reset
+  about 60 s later) or `flags=-DWATCHDOG_SELFTEST=2` (interrupts stop: reset within 5 s).
   `reset_reason` in `/info` must then read `watchdog`. Never upload these builds to the real installation.
 
 ## Layout

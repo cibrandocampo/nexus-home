@@ -5,10 +5,10 @@ Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Br
 
 | ID | Title | Depends on | Status | QA |
 |----|-------|------------|--------|----|
-| T001 | Template into `platform/` | — | Completed | — |
+| T001 | Template into `platform/` | — | Completed | Returned (B1, B2) |
 | T002 | Platform CI, Dependabot and image publishing | T001 | Completed | — |
 | T003 | Platform skills and project docs | T002 | Completed | — |
-| T004 | Firmware toolchain in Docker | T003 | Pending | — |
+| T004 | Firmware toolchain in Docker | T003 | Completed (DoD 4–5: user, bench board) | — |
 | T005 | Garage device simulator | T001 | Pending | — |
 
 ```

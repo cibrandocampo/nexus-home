@@ -16,20 +16,23 @@ docs/plans/            feature plans          docs/tasks/  task files + INDEX.md
 
 ## Firmware (garage: `devices/garage-iot-controller`)
 
-Runs on the host: `g++` and `arduino-cli` (snap) are installed.
+Everything runs in the toolchain image (`docker/Dockerfile`: Debian, `g++`, `python3`, `arduino-cli`
+1.6.0 with checksum, core `arduino:renesas_uno` 1.6.0). Run `make` from the device folder; the image is
+built on first use, the project is bind-mounted at `/work` and the container runs as you.
 
 ```sh
-test/run.sh                         # host tests (g++, -DHOST_TEST, stubs)
-tools/build.sh [version]            # host tests + compile -> dist/garage-<version>.bin
-tools/update.sh <ip> [version]      # network update (token: $GARAGE_TOKEN)
-test/api_smoke.sh <ip> [token]      # read-only checks against a running board
-arduino-cli upload --fqbn arduino:renesas_uno:unor4wifi -p /dev/ttyACM0 firmware   # USB (bench)
+make test                           # host tests (g++, -DHOST_TEST, stubs)
+make build [version=x.y.z]          # host tests + compile -> dist/garage-<version>.bin
+make ota version=x.y.z              # dist/garage-<version>.bin -> .ota (decoded back and checked)
+make upload [port=/dev/ttyACM0]     # compile + USB flash (--device): the bench board only
+make update ip=<ip> [version=]      # network update, host network (token: $GARAGE_TOKEN or asked)
+make smoke ip=<ip>                  # read-only checks against a running board
+make shell                          # a shell in the image
 ```
 
 - Board: Arduino UNO R4 WiFi, core `arduino:renesas_uno` 1.6.0. No extra libraries.
-- The arduino-cli snap cannot write to `/tmp`: build output goes inside the project (`build/`).
-- The snap's `bossac` was replaced with the 64-bit build; a core reinstall may bring the 32-bit
-  one back (`libstdc++.so.6` error on upload).
+- The scripts (`test/run.sh`, `tools/build.sh`, `tools/update.sh`, `tools/make_ota.py`) run inside the
+  image; the Makefile is the host entry point. Build output stays inside the project (`build/`).
 - `build/` and `dist/` are git-ignored.
 
 ### Devices on the LAN
@@ -39,9 +42,9 @@ arduino-cli upload --fqbn arduino:renesas_uno:unor4wifi -p /dev/ttyACM0 firmware
 | Garage (production) | `garage-3562d4` | `http://10.1.3.103/` | Read-only (`GET`). Anything else: ask the user |
 | Bench | `garage-33ad84` | `http://10.1.3.114/` (DHCP), `/dev/ttyACM0` | Free: flash, door commands, settings |
 
-`tools/update.sh` does not work from Claude's sandboxed shell (the board cannot reach the script's
-temporary HTTP server: `server_unreachable`). The user runs it with `! tools/update.sh <ip>`;
-the bench board can also be flashed over USB.
+`make update` does not work from Claude's sandboxed shell (the board cannot reach the script's
+temporary HTTP server: `server_unreachable`). The user runs it with `! make update ip=<ip>`; the
+bench board can also be flashed over USB (`make upload`).
 
 The bench board has nothing wired; A0 floats (~200). Jumper tables are in the garage `NEXT_SESSION.md`.
 
