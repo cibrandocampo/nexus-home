@@ -387,7 +387,10 @@ class Garage:
         self.queued = 0
         if self.door not in ("opening", "closing"):
             return "ok" if cancelled else "noop"
-        return self._pulse_cmd(src)
+        if not self.pulse(src):  # inside the pulse gap: the stop pulse is sent when it ends (2.0.6)
+            self.queued = 1
+            self.queued_src = src
+        return "ok"
 
     def door_toggle(self, src: str = "api") -> str:
         self.queued = 0

@@ -24,7 +24,7 @@ when the simulator drifts. The Platform workflow runs when either file changes.
 | `SIM_ID` | `garage-5e1a00` | Device id (`garage-<6 hex>`), also its hostname |
 | `SIM_NAME` | `Garage` | Stored name |
 | `SIM_TOKEN` | empty | Access token; empty = no token, as a new board |
-| `SIM_VERSION` | `2.0.5` | `sw_version` |
+| `SIM_VERSION` | `2.0.6` | `sw_version` |
 | `SIM_SPEED` | `1` | Simulated seconds per real second |
 | `SIM_LIGHT_LEVEL` | `400` | Light sensor level (higher = darker; night from 700) |
 | `SIM_IP` | the container's address | `wifi.ip` in the state |

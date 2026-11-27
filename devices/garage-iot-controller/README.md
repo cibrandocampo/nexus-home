@@ -82,7 +82,8 @@ are always shown right, and both `/door/open` and `/door/close` work. When
 `/door/close` is asked for a door stopped while closing (or `/door/open` for one stopped while opening), one
 pulse would move it the wrong way, so the board sends three, as a person would: the door goes the wrong way
 for about a second, stops, then goes where it was asked (`DOOR_PULSE_GAP_MS` apart). A press of the button
-or `/door/stop` cancels the pulses still to send; other commands answer 409 `door_busy` meanwhile.
+or `/door/stop` cancels the pulses still to send (a stop sent during the first pulse waits for the gap,
+then stops the door, so it never keeps going the wrong way); other commands answer 409 `door_busy` meanwhile.
 
 The door is only reported `closed` when the sensor says so. `DOOR_TRAVEL_MS` (opening) is 20 s and
 `DOOR_CLOSE_TIMEOUT_MS` is 40 s (measured: 16 s up, 19 s down, up to 30 s when the opener recalibrates
@@ -203,7 +204,7 @@ Base path `/api/v1`. All answers are JSON.
 | GET | `/log` | Recent events, newest first |
 | POST | `/door/open` | Open; no-op if fully open or opening (a door stopped part way is opened) |
 | POST | `/door/close` | Close; no-op if already closed or closing (a door stopped part way is closed) |
-| POST | `/door/stop` | Stop a moving door; no-op otherwise |
+| POST | `/door/stop` | Stop a moving door (inside the 1.2 s pulse gap the stop pulse is sent when the gap ends); no-op otherwise |
 | POST | `/door/toggle` | Raw pulse, same as the physical button |
 | POST | `/light/on` | Light on. `duration` in seconds (default 120, `0` = no timer) |
 | POST | `/light/off` | Light off |
@@ -308,7 +309,7 @@ Commands are idempotent and answer with the new state, so no second request is n
 | 404 | `not_found` | Unknown path or command |
 | 405 | `method_not_allowed` | Wrong HTTP method |
 | 409 | `door_busy` | Opposite movement in progress, or a pulse was sent less than 1.2 s ago; restart while moving |
-| 400 | `invalid_*`, `too_long` | A setting is out of range (message says which) |
+| 400 | `invalid_*` | A setting is out of range or too long (the code names the field) |
 | 500 | `save_failed` | The settings could not be written to flash |
 | 502 | `server_unreachable`, `file_not_found`, ... | Firmware update: the file could not be fetched or checked |
 

@@ -46,7 +46,7 @@ def default_ip() -> str:
 def device_from_env(env: os._Environ | dict = os.environ) -> Device:
     identity = Identity(
         id=env.get("SIM_ID", "garage-5e1a00"),
-        version=env.get("SIM_VERSION", "2.0.5"),
+        version=env.get("SIM_VERSION", "2.0.6"),
         ip=env.get("SIM_IP") or default_ip(),
     )
     device = Device(
