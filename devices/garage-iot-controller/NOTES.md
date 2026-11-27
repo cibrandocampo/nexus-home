@@ -17,7 +17,7 @@ Rewrite the garage controller from scratch (Arduino UNO R4 WiFi, door + light bu
 
 | What | Status |
 |------|--------|
-| New firmware in `firmware/` | 2.0.5. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
+| New firmware in `firmware/` | 2.0.6. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
 | Host test of the logic (`test/run.sh`) | **Passes** |
 | Garage board | In production since 2026-11-17 (`garage-3562d4`, 10.1.3.103, modem_fw 0.6.0, RSSI -77 to -83 dBm). Installation checks done on 2026-11-19, see below |
 | Web page | Works in the browser (reviewed 2026-11-19) |
@@ -199,7 +199,8 @@ the firmware misbehaves, stay on v2 and fix it: the wiring is already the new on
       pulse goes the other way: stopped while closing, it opens. Before 2.0.4 the board showed "closing" and
       raised a false close_failed after 40 s. 2.0.4 remembers the direction (see README, "Stopped part way").
       2.0.5 reports it (`door.stopped`) so the web page offers Open, and `/door/open` no longer ignores a door
-      stopped while closing.
+      stopped while closing. 2.0.6: `/door/stop` inside the pulse gap (right after a pulse, e.g. the first
+      pulse of a reversal) is sent when the gap ends instead of answering 409, so a stop always stops.
 - [ ] **Default light duration through the API:** 120 s. For Home Assistant, no timer may be better.
 - [x] Input wiring in the real installation (per the user, from memory, "I think 4.7 kΩ"): pull-downs to
       GND on pins 9 and 11; pin 12 is the usual LDR circuit and stays active high. The old documentation

@@ -21,9 +21,6 @@ API = README[README.index("## API") : README.index("### Home Assistant mapping")
 
 # Codes the README's error table lists that a test cannot produce, and why.
 NOT_PRODUCIBLE = {
-    # settings.cpp validate() returns it, but the JSON reader rejects an over-long field first with
-    # that field's own code (invalid_name, …), so the API never answers too_long (firmware 2.0.5).
-    "too_long",
     # Firmware updates are simulated in phase 3 (the simulator answers 501 not_simulated).
     "server_unreachable",
     "file_not_found",

@@ -96,11 +96,27 @@ def test_stop_cancels_pending_pulses_and_is_noop_when_still(board: Board):
     board.post("door/stop")
     board.wait(1.3)
     assert board.state()["door"]["stopped"] == "down"
-    board.post("door/close")  # stopped going down: three pulses queued
-    # garage.cpp doorStop: the pending pulses are cancelled, but the door is moving and the last
-    # pulse was under 1.2 s ago, so the stop pulse itself is refused: 409 although it cancelled.
-    assert board.post("door/stop").status_code == 409
-    assert board.device.garage.queued == 0
+    board.post("door/close")  # stopped going down: three pulses, the first one moves it up
+    # garage.cpp doorStop (2.0.6): the pending pulses are dropped and, inside the pulse gap, the
+    # stop pulse is sent when the gap ends: the door ends still instead of running up.
+    assert board.post("door/stop").json()["result"] == "ok"
+    assert board.device.garage.queued == 1
+    board.wait(1.3)
+    s = board.state()["door"]
+    assert (s["state"], s["moving"], s["stopped"]) == ("open", False, "up")
+    board.wait(3)
+    assert board.device.garage.opener.motion == 0
+
+
+def test_a_stop_right_after_an_open_waits_for_the_gap(board: Board):
+    board.post("door/open")
+    assert board.post("door/stop").json()["result"] == "ok"
+    assert board.door() == "opening"
+    assert board.post("door/open").status_code == 409  # the stop is pending
+    board.wait(1.3)
+    s = board.state()["door"]
+    assert (s["state"], s["stopped"]) == ("open", "up")
+    assert board.events()[0]["reason"] == "stopped"
 
 
 def test_close_while_stopped_going_down_reverses_and_closes(board: Board):

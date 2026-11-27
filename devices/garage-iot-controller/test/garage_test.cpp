@@ -21,6 +21,10 @@ static void sensor(bool closed) { pins[cfg::PIN_DOOR_SENSOR] = (closed == cfg::D
 static void night(bool n) { pins[cfg::PIN_LIGHT_LEVEL] = n ? 900 : 100; }  // read by begin()
 static void button(bool pressed) { pins[cfg::PIN_BUTTON] = (pressed == cfg::BUTTON_ACTIVE_LOW) ? LOW : HIGH; }
 static void press() { button(true); run(100); button(false); run(100); }
+static bool lastIs(Event e, Source src, Reason why) {
+  LogEntry x;
+  return recent(&x, 1) == 1 && x.event == e && x.source == src && x.reason == why;
+}
 static void boot(bool closed, bool isNight) {
   memset(pins, 0, sizeof pins);
   button(false);
@@ -124,13 +128,39 @@ int main() {
   // Stop while moving, and pulse rate limit.
   boot(true, false);
   doorOpen();
-  CHECK(doorStop() == Cmd::Busy);  // too soon after the previous pulse
+  CHECK(doorStop() == Cmd::Ok);  // inside the pulse gap: the stop pulse waits for the gap to end
+  CHECK(state().door == Door::Opening);
+  CHECK(doorOpen() == Cmd::Busy);  // a stop is pending
   sensor(false);
-  run(3000);
+  run(1300);
+  CHECK(state().door == Door::Open && state().stopped == Dir::Up);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::Stopped));
+  run(2000);
+  doorOpen();  // stopped going up: three pulses
+  run(1300);  // second pulse sent: stopped
+  run(1300);  // third: opening again
+  CHECK(state().door == Door::Opening);
+  run(1300);
   CHECK(doorStop() == Cmd::Ok);
   CHECK(state().door == Door::Open);
   run(2000);
   CHECK(doorStop() == Cmd::Noop);
+
+  // A stop right after the first pulse of a reversal: the remaining pulses are dropped and the stop
+  // pulse is sent when the gap ends, so the door ends still instead of running the wrong way.
+  doorClose();  // stopped going up (above): one pulse closes
+  run(3000);
+  doorStop();
+  run(2000);
+  CHECK(state().stopped == Dir::Down);
+  CHECK(doorClose() == Cmd::Ok && state().door == Door::Opening);  // first pulse: the wrong way
+  run(300);
+  CHECK(doorStop() == Cmd::Ok);
+  run(1000);
+  CHECK(state().door == Door::Open && state().stopped == Dir::Up);
+  CHECK(lastIs(Event::DoorOpen, Source::Api, Reason::Stopped));
+  run(3000);
+  CHECK(state().door == Door::Open);  // nothing else sent
 
   // Opened without the board (by hand) at night: detected through the sensor.
   boot(true, true);
@@ -184,10 +214,6 @@ int main() {
   CHECK(ev[cfg::LOG_SIZE - 1].event == Event::LightOn);
 
   // Every door event carries the reason that caused it.
-  auto lastIs = [&](Event e, Source src, Reason why) {
-    LogEntry x;
-    return recent(&x, 1) == 1 && x.event == e && x.source == src && x.reason == why;
-  };
   boot(false, false);
   CHECK(lastIs(Event::DoorOpen, Source::Sensor, Reason::Startup));
   sensor(true);
