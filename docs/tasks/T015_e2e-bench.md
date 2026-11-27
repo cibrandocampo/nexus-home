@@ -57,3 +57,64 @@ for the Synology: bridge network reaches the LAN), garage README "Platform" poin
 | `platform/e2e/docker-compose.yml`, `e2e/tests/devices.spec.js`, `e2e/tests/helpers.js` | Modify / create |
 | `platform/README.md`, `platform/docs/configuration.md`, `platform/CHANGELOG.md` | Modify |
 | `devices/garage-iot-controller/README.md`, `docs/plans/platform-middleware.md` | Modify |
+
+## Implementation notes
+
+- First: the e2e suite had been red on the PR since T012 (the home page's title changed from
+  "Welcome" to "Home"; the specs, `global-setup.js` and a Spanish check still expected the old one,
+  and the frontend tasks' checks had not run `make e2e`). Fixed in its own commit (`4a78d82`), before
+  this task's specs.
+- `e2e/docker-compose.yml`: a fixed subnet `172.31.250.0/24` (dynamic addresses from its upper half),
+  `sim-garage` (`garage-e2e001`, token) at `.10` and `sim-garage-new` (`garage-e2e002`, no token) at
+  `.11`; the server scans `172.31.250.0/28` (1 s per address), polls every second and reads logs every
+  5 s; the Playwright runner gets the simulators' URLs and the token, and waits for both.
+- `e2e/tests/devices.spec.js` (serial, the boards are added once):
+  1. the admin follows "Add a device" from the empty dashboard, scans (2 devices among 14 addresses),
+     adds E2E Garage (a wrong token first: refused with its message) and New Garage without a token,
+     and creates the user account for the next specs;
+  2. the user opens the door (confirmation, focus on Cancel), sees Opening, Open "moved by the app",
+     then closes it;
+  3. the user turns the light on for 10 minutes from the device page and off again;
+  4. a button press on the simulator shows on the dashboard ("moved by the button") and in the history
+     ("button or remote"), next to the user's own command ("by Ana Door");
+  5. `/sim/offline` for 25 s: the card shows offline (buttons disabled), then online again;
+  6. the admin changes the light time and the token; the old token is refused by the board, and a
+     command from the dashboard still works;
+  7. a `user` gets "Page not found" at `/admin/devices` and has no Devices tab; an account without a
+     role is sent to "Waiting for access".
+  `door_busy` is not reached from the UI (the buttons offer only what the board accepts); it is
+  covered by the frontend and backend tests.
+- Docs: `platform/README.md` (what it does, the dev simulators), `docs/configuration.md` ("Reaching the
+  devices": LAN access from the bridge network, SCAN_RANGES, DHCP, one connection per board; backups:
+  keep `DEVICE_TOKEN_KEY`), `CHANGELOG.md` (Unreleased: devices, simulator, PostgreSQL 19), garage
+  README "Platform" section, the plan's phase 2 marked implemented.
+- DoD 1: `make e2e` twice in a row, 22 passed each (`e2e-1.txt`, `e2e-2.txt`), format check clean.
+- DoD 2: the Platform workflow on the PR (after the push).
+- DoD 3: **NEEDS USER** — the bench board is unplugged (no `/dev/ttyACM0`, 10.1.3.114 silent).
+
+## QA — APPROVED (round 1)
+
+**Date**: 2026-11-28
+
+| # | Check | Evidence | Result |
+|---|-------|----------|--------|
+| 1 | E2E compose file valid | `docs/tasks/evidence/T015/qa/e2e-config.txt` | PASS |
+| 2 | E2E specs format (`make lint-e2e`) | `docs/tasks/evidence/T015/qa/lint-e2e.txt` | PASS |
+| 3 | `make e2e` run 1: 22 passed (7 device specs), retries 0 | `docs/tasks/evidence/T015/qa/e2e-1.txt` | PASS |
+| 4 | `make e2e` run 2: 22 passed, retries 0 | `docs/tasks/evidence/T015/qa/e2e-2.txt` | PASS |
+| 5 | Backend lint / coverage: 613 passed, 100 % | `docs/tasks/evidence/T015/qa/lint-backend.txt`, `coverage-backend.txt` | PASS |
+| 6 | Frontend lint / tests: 208 passed, thresholds met | `docs/tasks/evidence/T015/qa/lint-frontend.txt`, `test-frontend.txt` | PASS |
+| 7 | Simulator lint / tests (contract with the changed garage README): 90 passed, 99 % | `docs/tasks/evidence/T015/qa/lint-simulator.txt`, `test-simulator.txt` | PASS |
+| 8 | Garage firmware host tests | `docs/tasks/evidence/T015/qa/firmware-test.txt` | PASS |
+| 9 | DoD 2: Platform workflow on PR #9 | `docs/tasks/evidence/T015/qa/ci.txt` | PASS for 4a78d82; T015 is not pushed yet, re-check at `/push` |
+| 10 | DoD 3: bench-board flow | — | NEEDS USER (board unplugged) |
+| 11 | Docs: README, configuration, CHANGELOG, garage README, plan | diff review | PASS |
+
+### Observations (non-blocking)
+- Step 2.2's `door_busy` is not reached from the UI (the door control offers only what the board
+  accepts); it is covered by `HomePage.test.jsx`, `devices/errors.test.js` and the backend command tests.
+- `e2e/tests/helpers.js` was listed as Modify but needed no change; the existing helpers were enough.
+- `docs/configuration.md` "Reaching the devices" covers bridge-network LAN access generically, not
+  Synology by name. It is accurate, but a one-line Synology mention would match Step 4 word for word.
+- `platform/README.md`: the new dev-stack sentence runs past the usual line width (cosmetic).
+- The dev stack was left running and untouched; the e2e project tore itself down (`down -v`) both times.

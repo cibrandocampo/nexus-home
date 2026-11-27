@@ -53,6 +53,11 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       SMTP_TLS: none
+      # Devices: the scan covers the simulators' fixed addresses; a fast poll keeps the specs short.
+      SCAN_RANGES: 172.31.250.0/28
+      SCAN_TIMEOUT_S: "1"
+      POLL_INTERVAL_S: "1"
+      LOG_READ_EVERY_S: "5"
     read_only: true
     tmpfs:
       - /tmp
@@ -62,25 +67,43 @@ services:
       mailpit:
         condition: service_healthy
 
-  # A simulated garage board (platform/simulator), for the device specs (platform phase 2).
-  sim-garage:
+  # Simulated garage boards (platform/simulator) for the device specs, at fixed addresses inside
+  # SCAN_RANGES: one with a token, one new board without (the platform gives it one).
+  sim-garage: &sim
     build: ../simulator
     environment:
       SIM_ID: garage-e2e001
       SIM_NAME: E2E Garage
       SIM_TOKEN: e2e-sim-token
       SIM_SPEED: "10"
+    networks:
+      default:
+        ipv4_address: 172.31.250.10
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost/api/v1/info')"]
       interval: 2s
       timeout: 3s
       retries: 30
 
+  sim-garage-new:
+    <<: *sim
+    environment:
+      SIM_ID: garage-e2e002
+      SIM_NAME: New Garage
+      SIM_TOKEN: ""
+      SIM_SPEED: "10"
+    networks:
+      default:
+        ipv4_address: 172.31.250.11
+
   playwright:
     build:
       context: .
     environment:
       <<: *admin
+      SIM_URL: http://sim-garage
+      SIM_NEW_URL: http://sim-garage-new
+      SIM_TOKEN: e2e-sim-token
       BASE_URL: http://server:8000
       MAILPIT_URL: http://mailpit:8025
       CI: ${CI:-}
@@ -93,3 +116,16 @@ services:
     depends_on:
       server:
         condition: service_healthy
+      sim-garage:
+        condition: service_healthy
+      sim-garage-new:
+        condition: service_healthy
+
+# A fixed subnet: the simulators get known addresses inside SCAN_RANGES (172.31.250.0/28); the
+# other services take theirs from the upper half (ip_range), outside the scanned range.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+          ip_range: 172.31.250.128/25

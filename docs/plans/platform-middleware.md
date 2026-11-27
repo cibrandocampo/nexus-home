@@ -180,7 +180,8 @@ Three phases, one PR each. Every phase leaves `main` working and deployable.
 3. Device simulator (fake garage implementing `/api/v1` from the README, with doors that move in
    simulated time), used by tests, by the dev compose and by E2E.
 
-**Phase 2 — Devices** (`feat/platform-devices`)
+**Phase 2 — Devices** (`feat/platform-devices`) — implemented 2026-11-28 in T006–T015 (PR #9); the
+bench-board checks wait for the board to be plugged in.
 4. Device model, token encryption, manual add, roles `user`/`admin` checks.
 5. Discovery scan.
 6. Polling, online/offline, event bus, state API.

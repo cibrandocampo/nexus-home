@@ -121,6 +121,23 @@ Read by `dev/docker-compose.yml` for its two simulated garage boards; production
 | `SIM_GARAGE_B_TOKEN` | `sim-garage-b-token` | Access token of `sim-garage-b` (`garage-5e1a0b`). |
 | `SIM_SPEED` | `1` | Simulated seconds per real second (door travel, timers). |
 
+## Reaching the devices
+
+The app talks to the boards over plain HTTP on the LAN (`http://<board>/api/v1/…`): polling every
+`POLL_INTERVAL_S`, commands, settings and the discovery scan. With the default bridge network of
+`docker-compose.yml` the container reaches the LAN through the host (on a Synology, the NAS's own
+network; Container Manager needs no extra setting); nothing else is needed.
+
+- `SCAN_RANGES` must be the LAN where the boards live (for example `10.1.2.0/23`), not the Docker
+  network.
+- Boards get their address by DHCP: a board registered by IP that moves is followed by the next scan
+  (only when its old address no longer answers as that board, so a copied identity never receives the
+  token). Reserving their addresses on the router avoids the question.
+- The boards accept one connection at a time; the app never sends them two requests at once. Keep
+  other heavy pollers off them.
+- Firmware updates (phase 3) will need the opposite direction too: the boards download from the app's
+  LAN address and port (`DEVICE_BASE_URL`), so that port must be open to them.
+
 ## HTTPS behind a reverse proxy
 
 The app speaks plain HTTP on `APP_PORT`; HTTPS is the reverse proxy's job (on Synology: Control Panel →
@@ -137,7 +154,11 @@ Login Portal → Advanced → Reverse Proxy, from `https://app.example.com` to `
 
 ## Backups
 
-All state is in Postgres. A consistent dump while the stack runs:
+All state is in Postgres, except the key that decrypts the device tokens: keep a copy of
+`DEVICE_TOKEN_KEY` (from `.env`) with the backups. Without it a restored database works, but each
+device must be given its token again (Devices → device → Change address or token).
+
+A consistent dump while the stack runs:
 
 ```sh
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backup-$(date +%F).dump
