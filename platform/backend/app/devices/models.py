@@ -76,3 +76,25 @@ class DeviceEvent(Base):
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
+
+
+class DeviceCommand(Base):
+    """A command sent to a board through the platform, failures included (the audit trail)."""
+
+    __tablename__ = "device_commands"
+    __table_args__ = (Index("ix_device_commands_device_pk_at", "device_pk", "at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_pk: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
+    entity: Mapped[str] = mapped_column(String(32))
+    command: Mapped[str] = mapped_column(String(32))
+    params: Mapped[dict] = mapped_column(JSONB, default=dict)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    result: Mapped[str] = mapped_column(String(48))  # ok, noop, or the error code answered
+    status: Mapped[int | None]  # the board's HTTP status; null when it did not answer
+    # Attribution (devices/commands.py): events credited so far, and whether the command is used up.
+    credited: Mapped[int] = mapped_column(default=0, server_default="0")
+    used: Mapped[bool] = mapped_column(default=False, server_default="false")

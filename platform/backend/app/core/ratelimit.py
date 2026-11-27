@@ -54,6 +54,7 @@ REFRESH_IP = RateLimit("refresh_ip", 30, 60)
 CHANGE_PASSWORD_USER = RateLimit("change_password_user", 5, 3600)
 DEVICE_ADD_USER = RateLimit("device_add_user", 20, 3600)  # each one checks a token on a board
 SCAN_USER = RateLimit("scan_user", 30, 3600)  # each one probes up to 1024 addresses
+COMMAND_USER = RateLimit("command_user", 30, 60)  # a door or light command reaches a board
 ALL = (
     LOGIN_START_IP,
     LOGIN_EMAIL,
@@ -62,6 +63,7 @@ ALL = (
     CHANGE_PASSWORD_USER,
     DEVICE_ADD_USER,
     SCAN_USER,
+    COMMAND_USER,
 )
 
 

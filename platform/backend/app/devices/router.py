@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from pydantic import AwareDatetime, StringConstraints
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +10,10 @@ from app.auth.deps import RequireAdmin, RequireUser
 from app.core import ratelimit
 from app.core.db import get_session
 from app.core.types import MAX_DB_INT, NO_NUL, IdPath
-from app.devices import events, poller, scan, service
+from app.devices import commands, events, poller, scan, service
 from app.devices.schemas import (
+    CommandIn,
+    CommandOut,
     DeviceCreate,
     DeviceOut,
     DevicePage,
@@ -120,3 +122,20 @@ async def all_events(
         db, device_pk=device, events=event, since=since, until=until, page=page, size=size
     )
     return EventPage(items=items, total=total, page=page, size=size)
+
+
+Name = Annotated[str, Path(pattern=r"^[a-z0-9_]{1,32}$")]
+
+
+@router.post("/{device_pk}/entities/{entity}/{command}")
+async def send_command(
+    device_pk: IdPath,
+    entity: Name,
+    command: Name,
+    user: RequireUser,
+    db: Db,
+    body: CommandIn | None = None,
+) -> CommandOut:
+    ratelimit.COMMAND_USER.hit(str(user.id))
+    params = body.model_dump(exclude_none=True) if body else {}
+    return CommandOut(**await commands.send(db, device_pk, entity, command, params, user))

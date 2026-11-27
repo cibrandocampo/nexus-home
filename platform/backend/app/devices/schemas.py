@@ -119,3 +119,15 @@ class EventPage(BaseModel):
     total: int
     page: int
     size: int
+
+
+class CommandIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # light/on only: seconds, 0 = no timer (the board's range).
+    duration: int | None = Field(default=None, ge=0, le=86_400, strict=True)
+
+
+class CommandOut(BaseModel):
+    result: str  # ok, noop
+    state: dict[str, Any] | None

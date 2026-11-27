@@ -39,6 +39,9 @@ ENTITIES = [
 ]
 
 
+COMMANDS = {f"{e['id']}/{c}" for e in ENTITIES for c in e.get("commands", [])}
+
+
 def garage_state(rev: int = 1, uptime_s: int = 100, door: str = "closed") -> dict[str, Any]:
     return {
         "rev": rev,
@@ -147,7 +150,26 @@ class FakeBoard:
             return httpx.Response(200, json=body()) if body else error(404, "not_found")
         if path == "settings":
             return self.post_settings(json.loads(request.content or b"{}"))
+        if path in COMMANDS:
+            return self.command(path, json.loads(request.content or b"{}"))
         return error(404, "not_found")
+
+    def command(self, path: str, body: dict[str, Any]) -> httpx.Response:
+        """Enough of the door and light for the platform: the new state, `rev` + 1."""
+        state = json.loads(json.dumps(self.state))
+        door, light = state["door"], state["light"]
+        if path == "door/open":
+            door.update(state="opening", moving=True, sensor_closed=False, last_source="api")
+        elif path == "door/close":
+            door.update(state="closing", moving=True, last_source="api")
+        elif path == "light/on":
+            seconds = body.get("duration", 120)
+            light.update(state="on", timed=seconds > 0, remaining_s=seconds)
+        elif path == "light/off":
+            light.update(state="off", timed=False, remaining_s=0)
+        state["rev"] += 1
+        self.state = state
+        return httpx.Response(200, json={"result": "ok", "state": state})
 
     def post_settings(self, body: dict[str, Any]) -> httpx.Response:
         if "token" in body:

@@ -23,6 +23,7 @@ from app.core.errors import AppError
 from app.core.types import MAX_DB_INT
 from app.devices.bus import Rebooted, StateChanged, bus
 from app.devices.client import DeviceError
+from app.devices.commands import attribute
 from app.devices.models import Device, DeviceBoot, DeviceEvent
 from app.devices.service import client_for
 
@@ -128,19 +129,21 @@ async def store_log(db: AsyncSession, device: Device, board_log: Log, now: datet
         log.warning(
             "Device %s logged more than %d events between two reads", device.device_id, LOG_SIZE
         )
-    for t, event, source, reason, value in fresh:
-        db.add(
-            DeviceEvent(
-                device_pk=device.id,
-                boot_id=boot.id,
-                t=t,
-                at=started_at + timedelta(seconds=t),
-                event=event,
-                source=source,
-                reason=reason,
-                value=value,
-            )
+    rows = [
+        DeviceEvent(
+            device_pk=device.id,
+            boot_id=boot.id,
+            t=t,
+            at=started_at + timedelta(seconds=t),
+            event=event,
+            source=source,
+            reason=reason,
+            value=value,
         )
+        for t, event, source, reason, value in fresh
+    ]
+    await attribute(db, device.id, rows)  # before adding them: its queries must not see them
+    db.add_all(rows)
     await db.commit()
     return len(fresh)
 
