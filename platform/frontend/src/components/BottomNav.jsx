@@ -1,4 +1,4 @@
-import { History, House, UserRound, Users } from 'lucide-react';
+import { History, House, Router, UserRound, Users } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, matchPath, useLocation } from 'react-router';
@@ -18,6 +18,13 @@ const TABS = [
     min: 'user',
   },
   { to: '/profile', icon: UserRound, label: 'nav.profile', match: ['/profile'], min: 'none' },
+  {
+    to: '/admin/devices',
+    icon: Router,
+    label: 'nav.devices',
+    match: ['/admin/devices/*'],
+    min: 'admin',
+  },
   { to: '/admin/users', icon: Users, label: 'nav.users', match: ['/admin/users/*'], min: 'admin' },
 ];
 const LEVEL = { none: 0, user: 1, admin: 2 };

@@ -7,7 +7,8 @@
     "label": "Main",
     "profile": "Profile",
     "users": "Users",
-    "history": "History"
+    "history": "History",
+    "devices": "Devices"
   },
   "colorScheme": {
     "label": "Colour scheme",
@@ -398,5 +399,98 @@
     "all": "See the history of every device",
     "pastTheEnd": "There are no events on this page.",
     "firstPage": "Go to the first page"
+  },
+  "adminDevices": {
+    "title": "Devices",
+    "none": "No devices yet. Scan the network below, or add one by its address.",
+    "device": "Device",
+    "status": "Status",
+    "actions": "Actions",
+    "actionsFor": "Actions for {{name}}",
+    "settings": "Settings",
+    "where": "{{id}} at {{host}}, firmware {{version}}",
+    "added": "{{name}} added.",
+    "removed": "{{name}} removed.",
+    "back": "Back to devices",
+    "open": "Open the device page",
+    "settingsTitle": "Settings of {{name}}",
+    "stored": "Stored on the device",
+    "board": "Device",
+    "add": {
+      "byAddress": "Add by address",
+      "title": "Add a device",
+      "host": "Address",
+      "hostHelp": "IP address or host name of the device on your network.",
+      "token": "Access token",
+      "tokenHelp": "Leave it empty for a new device without one: the platform sets a new token on it.",
+      "submit": "Add device",
+      "short": "Add",
+      "tokenInvalid": "The device refused this token. Check it and try again."
+    },
+    "remove": {
+      "action": "Remove",
+      "title": "Remove {{name}}?",
+      "text": "Its history is deleted too. The device itself keeps working and can be added again.",
+      "submit": "Remove device"
+    },
+    "scan": {
+      "title": "Find devices on the network",
+      "ranges": "Network ranges",
+      "rangesHelp": "Comma-separated, for example 10.1.2.0/23. At most 1024 addresses.",
+      "submit": "Scan the network",
+      "running": "Scanning. It takes a few seconds.",
+      "result_one": "{{count}} device found among {{scanned}} addresses in {{seconds}} s.",
+      "result_other": "{{count}} devices found among {{scanned}} addresses in {{seconds}} s.",
+      "registered": "Added",
+      "addThis": "Add {{name}}"
+    },
+    "form": {
+      "name": "Name",
+      "bytes": "{{count}} of {{max}} bytes (accents count twice)",
+      "nameRequired": "Enter a name.",
+      "nameTooLong": "Too long for the device: shorten it.",
+      "open_s": "Opening time (seconds)",
+      "open_sHelp": "How long the door takes to open: {{min}} to {{max}}.",
+      "close_s": "Close confirmation (seconds)",
+      "close_sHelp": "Time for the sensor to confirm a close: {{min}} to {{max}}.",
+      "light_s": "Light time (seconds)",
+      "light_sHelp": "How long the light stays on by default: {{min}} to {{max}}.",
+      "night_level": "Night level",
+      "night_levelHelp": "Light sensor reading from which it is night: {{min}} to {{max}}.",
+      "display": "LED matrix on",
+      "range": "Between {{min}} and {{max}}.",
+      "refused": "The device refused this value.",
+      "nothing": "Nothing to save: no changes.",
+      "saved": "Settings saved."
+    },
+    "restart": {
+      "action": "Restart",
+      "help": "Restarts the device. It is back in a few seconds.",
+      "title": "Restart {{name}}?",
+      "text": "The device stops answering for a few seconds. It cannot restart while the door moves.",
+      "done": "Restarting."
+    },
+    "token": {
+      "title": "Access token",
+      "help": "The device asks for it on every command and on its own web page.",
+      "show": "Show the token",
+      "revealTitle": "Access token of {{name}}",
+      "revealText": "Showing the token is recorded. Anyone who sees it can operate the device.",
+      "current": "Token",
+      "previous": "Previous token",
+      "previousHelp": "A change of token was not confirmed: the device may still use the previous one.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "rotate": "Change the token",
+      "rotateTitle": "Change the token of {{name}}?",
+      "rotateText": "The platform sets a new token on the device. Its own web page will ask for the new one.",
+      "rotated": "Token changed."
+    },
+    "connection": {
+      "title": "Change address or token",
+      "token": "Access token",
+      "tokenHelp": "Only if the device's token changed elsewhere. Leave it empty to keep the stored one.",
+      "saved": "Connection saved."
+    }
   }
 }

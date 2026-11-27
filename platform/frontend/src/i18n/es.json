@@ -7,7 +7,8 @@
     "label": "Principal",
     "profile": "Perfil",
     "users": "Usuarios",
-    "history": "Historial"
+    "history": "Historial",
+    "devices": "Dispositivos"
   },
   "colorScheme": {
     "label": "Tema",
@@ -398,5 +399,98 @@
     "all": "Ver el historial de todos los dispositivos",
     "pastTheEnd": "No hay eventos en esta página.",
     "firstPage": "Ir a la primera página"
+  },
+  "adminDevices": {
+    "title": "Dispositivos",
+    "none": "Todavía no hay dispositivos. Busca en la red aquí abajo o añade uno por su dirección.",
+    "device": "Dispositivo",
+    "status": "Estado",
+    "actions": "Acciones",
+    "actionsFor": "Acciones de {{name}}",
+    "settings": "Ajustes",
+    "where": "{{id}} en {{host}}, firmware {{version}}",
+    "added": "{{name}} añadido.",
+    "removed": "{{name}} quitado.",
+    "back": "Volver a los dispositivos",
+    "open": "Abrir la página del dispositivo",
+    "settingsTitle": "Ajustes de {{name}}",
+    "stored": "Guardado en el dispositivo",
+    "board": "Dispositivo",
+    "add": {
+      "byAddress": "Añadir por dirección",
+      "title": "Añadir un dispositivo",
+      "host": "Dirección",
+      "hostHelp": "Dirección IP o nombre del dispositivo en tu red.",
+      "token": "Token de acceso",
+      "tokenHelp": "Déjalo vacío si es un dispositivo nuevo sin token: la plataforma le pone uno.",
+      "submit": "Añadir dispositivo",
+      "short": "Añadir",
+      "tokenInvalid": "El dispositivo rechazó este token. Revísalo y vuelve a intentarlo."
+    },
+    "remove": {
+      "action": "Quitar",
+      "title": "¿Quitar {{name}}?",
+      "text": "También se borra su historial. El dispositivo sigue funcionando y se puede volver a añadir.",
+      "submit": "Quitar dispositivo"
+    },
+    "scan": {
+      "title": "Buscar dispositivos en la red",
+      "ranges": "Rangos de red",
+      "rangesHelp": "Separados por comas, por ejemplo 10.1.2.0/23. Como mucho 1024 direcciones.",
+      "submit": "Buscar en la red",
+      "running": "Buscando. Tarda unos segundos.",
+      "result_one": "{{count}} dispositivo encontrado entre {{scanned}} direcciones en {{seconds}} s.",
+      "result_other": "{{count}} dispositivos encontrados entre {{scanned}} direcciones en {{seconds}} s.",
+      "registered": "Añadido",
+      "addThis": "Añadir {{name}}"
+    },
+    "form": {
+      "name": "Nombre",
+      "bytes": "{{count}} de {{max}} bytes (las tildes cuentan doble)",
+      "nameRequired": "Escribe un nombre.",
+      "nameTooLong": "Demasiado largo para el dispositivo: acórtalo.",
+      "open_s": "Tiempo de apertura (segundos)",
+      "open_sHelp": "Lo que tarda la puerta en abrirse: de {{min}} a {{max}}.",
+      "close_s": "Confirmación de cierre (segundos)",
+      "close_sHelp": "Tiempo para que el sensor confirme el cierre: de {{min}} a {{max}}.",
+      "light_s": "Tiempo de luz (segundos)",
+      "light_sHelp": "Cuánto queda encendida la luz por defecto: de {{min}} a {{max}}.",
+      "night_level": "Nivel de noche",
+      "night_levelHelp": "Lectura del sensor de luz a partir de la cual es de noche: de {{min}} a {{max}}.",
+      "display": "Matriz LED encendida",
+      "range": "Entre {{min}} y {{max}}.",
+      "refused": "El dispositivo rechazó este valor.",
+      "nothing": "Nada que guardar: no hay cambios.",
+      "saved": "Ajustes guardados."
+    },
+    "restart": {
+      "action": "Reiniciar",
+      "help": "Reinicia el dispositivo. Vuelve en unos segundos.",
+      "title": "¿Reiniciar {{name}}?",
+      "text": "El dispositivo deja de responder unos segundos. No puede reiniciarse mientras la puerta se mueve.",
+      "done": "Reiniciando."
+    },
+    "token": {
+      "title": "Token de acceso",
+      "help": "El dispositivo lo pide en cada orden y en su propia página web.",
+      "show": "Ver el token",
+      "revealTitle": "Token de acceso de {{name}}",
+      "revealText": "Ver el token queda registrado. Quien lo vea puede manejar el dispositivo.",
+      "current": "Token",
+      "previous": "Token anterior",
+      "previousHelp": "No se confirmó un cambio de token: el dispositivo puede seguir usando el anterior.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "rotate": "Cambiar el token",
+      "rotateTitle": "¿Cambiar el token de {{name}}?",
+      "rotateText": "La plataforma pone un token nuevo en el dispositivo. Su propia página web pedirá el nuevo.",
+      "rotated": "Token cambiado."
+    },
+    "connection": {
+      "title": "Cambiar dirección o token",
+      "token": "Token de acceso",
+      "tokenHelp": "Solo si el token del dispositivo cambió por otro lado. Déjalo vacío para mantener el guardado.",
+      "saved": "Conexión guardada."
+    }
   }
 }
