@@ -96,6 +96,7 @@ class FakeBoard:
     requests: list[httpx.Request] = field(default_factory=list)
     in_flight: int = 0
     max_in_flight: int = 0
+    restarts: int = 0
 
     def info(self) -> dict[str, Any]:
         return {
@@ -150,6 +151,9 @@ class FakeBoard:
             return httpx.Response(200, json=body()) if body else error(404, "not_found")
         if path == "settings":
             return self.post_settings(json.loads(request.content or b"{}"))
+        if path == "restart":
+            self.restarts += 1
+            return httpx.Response(200, json={"result": "restarting"})
         if path in COMMANDS:
             return self.command(path, json.loads(request.content or b"{}"))
         return error(404, "not_found")

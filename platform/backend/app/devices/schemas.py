@@ -131,3 +131,16 @@ class CommandIn(BaseModel):
 class CommandOut(BaseModel):
     result: str  # ok, noop
     state: dict[str, Any] | None
+
+
+class DeviceUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    host: Host | None = None
+    token: DeviceToken | None = None
+
+
+class TokenOut(BaseModel):
+    token: str
+    # Set after a rotation the board did not confirm: it may still be on this one.
+    previous_token: str | None

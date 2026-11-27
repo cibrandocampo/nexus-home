@@ -1,9 +1,10 @@
 """/api/devices: the registry (list and read for users; add and remove for admins)."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Path, Query
-from pydantic import AwareDatetime, StringConstraints
+from fastapi import APIRouter, Body, Depends, Path, Query, Response
+from fastapi.exceptions import RequestValidationError
+from pydantic import AwareDatetime, StringConstraints, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import RequireAdmin, RequireUser
@@ -11,16 +12,19 @@ from app.core import ratelimit
 from app.core.db import get_session
 from app.core.types import MAX_DB_INT, NO_NUL, IdPath
 from app.devices import commands, events, poller, scan, service
+from app.devices import settings as device_settings
 from app.devices.schemas import (
     CommandIn,
     CommandOut,
     DeviceCreate,
     DeviceOut,
     DevicePage,
+    DeviceUpdate,
     EventPage,
     ScanOut,
     ScanRanges,
     ScanRequest,
+    TokenOut,
 )
 
 router = APIRouter(prefix="/devices", tags=["devices"])
@@ -139,3 +143,55 @@ async def send_command(
     ratelimit.COMMAND_USER.hit(str(user.id))
     params = body.model_dump(exclude_none=True) if body else {}
     return CommandOut(**await commands.send(db, device_pk, entity, command, params, user))
+
+
+@router.get("/{device_pk}/settings")
+async def read_settings(device_pk: IdPath, admin: RequireAdmin, db: Db) -> dict[str, Any]:
+    return await device_settings.read_settings(db, device_pk)
+
+
+@router.patch("/{device_pk}/settings")
+async def change_settings(
+    device_pk: IdPath, admin: RequireAdmin, db: Db, body: Annotated[dict[str, Any], Body()]
+) -> dict[str, Any]:
+    device = await service.get_device(db, device_pk)
+    driver = device_settings.driver_of(device)
+    try:
+        values = device_settings.settings_model(driver).model_validate(body)
+    except ValidationError as exc:
+        raise RequestValidationError(
+            [{**e, "loc": ("body", *e["loc"])} for e in exc.errors(include_url=False)]
+        ) from None
+    return await device_settings.change_settings(db, device_pk, values, admin)
+
+
+@router.post("/{device_pk}/restart", status_code=204)
+async def restart(device_pk: IdPath, admin: RequireAdmin, db: Db) -> None:
+    await device_settings.restart(db, device_pk, admin)
+
+
+@router.post("/{device_pk}/rotate-token", status_code=204)
+async def rotate_token(device_pk: IdPath, admin: RequireAdmin, db: Db) -> None:
+    ratelimit.DEVICE_TOKEN_USER.hit(str(admin.id))
+    await device_settings.rotate_token(db, device_pk, admin)
+
+
+@router.get("/{device_pk}/token")
+async def reveal_token(
+    device_pk: IdPath, admin: RequireAdmin, db: Db, response: Response
+) -> TokenOut:
+    ratelimit.DEVICE_TOKEN_USER.hit(str(admin.id))
+    response.headers["Cache-Control"] = "no-store"  # a secret: never kept by a browser or proxy
+    return TokenOut(**await device_settings.reveal_token(db, device_pk, admin))
+
+
+@router.patch("/{device_pk}")
+async def update_device(
+    device_pk: IdPath, body: DeviceUpdate, admin: RequireAdmin, db: Db
+) -> DeviceOut:
+    if body.token is not None:
+        ratelimit.DEVICE_TOKEN_USER.hit(str(admin.id))
+    if body.host is not None:
+        ratelimit.DEVICE_ADD_USER.hit(str(admin.id))  # it probes an address, like an add
+    device = await device_settings.update_device(db, device_pk, body.host, body.token, admin)
+    return DeviceOut.model_validate(device)

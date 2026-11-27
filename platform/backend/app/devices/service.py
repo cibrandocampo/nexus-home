@@ -182,3 +182,33 @@ async def delete_device(db: AsyncSession, pk: int) -> None:
     await db.delete(device)
     await db.commit()
     log.info("Removed device %s", device.device_id)
+
+
+async def accepts(host: str, token: str) -> bool:
+    """Whether the board answers an authenticated read with this token."""
+    try:
+        await DeviceClient(host, token).settings()
+    except DeviceError:
+        return False
+    return True
+
+
+async def settle_token(db: AsyncSession, device: Device) -> bool:
+    """After a rotation the board did not confirm, two tokens are stored: find the one the board
+    accepts and keep only that one. True when settled (or nothing was pending); False when the board
+    accepts neither right now (both stay stored)."""
+    if device.token_previous_encrypted is None:
+        return True
+    current = device_token(device)
+    if current is not None and await accepts(device.host, current):
+        device.token_previous_encrypted = None
+    elif await accepts(device.host, decrypt_token(device.token_previous_encrypted)):
+        device.token_encrypted, device.token_previous_encrypted = (
+            device.token_previous_encrypted,
+            None,
+        )
+    else:
+        return False
+    await db.commit()
+    log.info("Settled the token of device %s", device.device_id)
+    return True

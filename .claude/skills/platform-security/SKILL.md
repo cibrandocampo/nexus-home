@@ -18,7 +18,7 @@ Paths are relative to `platform/`; run `make` targets from there.
 | Cookie `Secure` | Follows `COOKIE_SECURE` (true by default; false only for plain-HTTP setups such as e2e) | `auth/sessions.py` |
 | Sign-up | Only with `ALLOW_SELF_SIGNUP`; new accounts have role `none`; disposable domains blocked; unconfirmed sign-ups deleted after 7 days | `auth/`, `core/scheduler.py` |
 | Roles | `none` < `user` < `admin`, checked server-side on every route (`require_role`); last active admin protected | `auth/deps.py`, `users/service.py` |
-| Rate limits | Per IP: login start (10/h), code/password check (10/min), refresh (30/min). Per account: code emails (3/h), password change (5/h) | `core/ratelimit.py` |
+| Rate limits | Per IP: login start (10/h), code/password check (10/min), refresh (30/min). Per account: code emails (3/h), password change (5/h), device add or host change (20/h), scan (30/h), device commands (30/min), device token rotate, reveal or re-enter (20/h) | `core/ratelimit.py` |
 | Client IP | `X-Forwarded-For` only from `TRUSTED_PROXIES`; uvicorn runs with `--no-proxy-headers` | `core/ratelimit.py`, `backend/entrypoint.sh` |
 | Headers | CSP (`script-src 'self'`, no inline scripts; `style-src 'unsafe-inline'` for Mantine), `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `COOP`; HSTS is the proxy's job | `core/headers.py` |
 | Errors | Envelope only; unhandled errors → `internal_error`, traceback in the log | `core/errors.py` |

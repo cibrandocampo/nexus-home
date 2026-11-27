@@ -21,6 +21,10 @@ class Device(Base):
     host: Mapped[str] = mapped_column(String(253))  # IP or hostname, optional :port
     # Fernet token (devices/crypto.py); null for a board registered without one.
     token_encrypted: Mapped[str | None] = mapped_column(String(512))
+    # The token before a rotation the board did not confirm (it may still be on it): shown to the
+    # admin with the current one, and settled (service.settle_token) by the next rotation, command,
+    # settings read or change, restart, or a re-entered token.
+    token_previous_encrypted: Mapped[str | None] = mapped_column(String(512))
     sw_version: Mapped[str] = mapped_column(String(32), default="")
     modem_fw: Mapped[str] = mapped_column(String(32), default="")
     mode: Mapped[str] = mapped_column(String(16), default="")

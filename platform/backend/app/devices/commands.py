@@ -18,7 +18,7 @@ from app.devices.bus import StateChanged, bus
 from app.devices.client import DeviceError
 from app.devices.models import Device, DeviceCommand, DeviceEvent
 from app.devices.poller import apply_state
-from app.devices.service import client_for, get_device
+from app.devices.service import client_for, get_device, settle_token
 from app.users.models import User
 
 log = logging.getLogger(__name__)
@@ -102,6 +102,7 @@ async def send(
     if not device.online:
         await _record(db, row, OFFLINE.code, None)
         raise OFFLINE
+    await settle_token(db, device)  # after an unconfirmed rotation: use the token the board has
     try:
         answer = await client_for(device).post(f"{entity}/{command}", params or None)
     except DeviceError as exc:
