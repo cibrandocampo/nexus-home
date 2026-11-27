@@ -1,0 +1,48 @@
+"""/api/devices: the registry (list and read for users; add and remove for admins)."""
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.deps import RequireAdmin, RequireUser
+from app.core import ratelimit
+from app.core.db import get_session
+from app.core.types import NO_NUL, IdPath
+from app.devices import service
+from app.devices.schemas import DeviceCreate, DeviceOut, DevicePage
+
+router = APIRouter(prefix="/devices", tags=["devices"])
+
+Db = Annotated[AsyncSession, Depends(get_session)]
+
+
+@router.get("")
+async def list_devices(
+    user: RequireUser,
+    db: Db,
+    q: Annotated[str | None, Query(max_length=100, pattern=NO_NUL)] = None,
+    page: Annotated[int, Query(ge=1, le=100_000)] = 1,
+    size: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> DevicePage:
+    devices, total = await service.list_devices(db, q=q, page=page, size=size)
+    return DevicePage(
+        items=[DeviceOut.model_validate(d) for d in devices], total=total, page=page, size=size
+    )
+
+
+@router.post("", status_code=201)
+async def add_device(body: DeviceCreate, admin: RequireAdmin, db: Db) -> DeviceOut:
+    # It checks a secret against a board: limited like the other secret checks.
+    ratelimit.DEVICE_ADD_USER.hit(str(admin.id))
+    return DeviceOut.model_validate(await service.add_device(db, body.host, body.token))
+
+
+@router.get("/{device_pk}")
+async def get_device(device_pk: IdPath, user: RequireUser, db: Db) -> DeviceOut:
+    return DeviceOut.model_validate(await service.get_device(db, device_pk))
+
+
+@router.delete("/{device_pk}", status_code=204)
+async def delete_device(device_pk: IdPath, admin: RequireAdmin, db: Db) -> None:
+    await service.delete_device(db, device_pk)

@@ -9,7 +9,7 @@ limits off).
 
 1. Copy `docker-compose.yml` and `.env.example` (as `.env`) to the server, for example a folder on a
    Synology NAS used as a Container Manager project.
-2. Fill in `.env`: at least `DOCKER_IMAGE`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `SITE_URL`, the SMTP
+2. Fill in `.env`: at least `DOCKER_IMAGE`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `DEVICE_TOKEN_KEY`, `SITE_URL`, the SMTP
    settings, `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
 3. Start it: `docker compose up -d` (or create the project in Container Manager). The app migrates the
    database on start and creates the first administrator from `ADMIN_EMAIL`.
@@ -95,6 +95,13 @@ in `$DATA_PATH/postgres`.
 |---|---|---|
 | `ADMIN_EMAIL` | empty | With `ADMIN_PASSWORD`, created as a password administrator at start-up when no admin exists. An existing user with this email is never changed. |
 | `ADMIN_PASSWORD` | empty | Its first password; it must follow the password rules (10+ characters, not only digits, not the email) or the app refuses to start. Change it after the first login. Both empty: no administrator is created. |
+
+### Devices
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DEVICE_TOKEN_KEY` | the development key | Fernet key (url-safe base64 of 32 bytes) that encrypts the device tokens in the database. **Production refuses to start** with the development key or a malformed one. Generate one: `openssl rand -base64 32 \| tr '+/' '-_'`. Back it up with the database: if it is lost or changed, every stored token becomes unreadable and each device answers `device_token_unreadable` until an admin re-enters its token. |
+| `DEVICE_TIMEOUT_S` | `3` | Seconds to wait for a board's answer before it counts as unreachable. |
 
 ### Device simulators (development only)
 

@@ -13,6 +13,7 @@ from app.core.db import get_engine, get_sessionmaker
 from app.core.errors import UnhandledErrorMiddleware, register_error_handlers
 from app.core.headers import SecurityHeadersMiddleware
 from app.core.logging import configure_logging
+from app.devices.router import router as devices_router
 from app.spa import mount_spa
 from app.users.bootstrap import ensure_admin
 from app.users.router import router as users_router
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api")
     app.include_router(auth_router, prefix="/api")
     app.include_router(users_router, prefix="/api")
+    app.include_router(devices_router, prefix="/api")
     mount_spa(app, settings.static_dir)
     return app
 

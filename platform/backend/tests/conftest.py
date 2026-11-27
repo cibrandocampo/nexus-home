@@ -103,3 +103,16 @@ def make_user(db):
         return user
 
     return make
+
+
+@pytest.fixture(autouse=True)
+def lan(monkeypatch):
+    """The boards the backend can reach: none until a test adds one (tests/fakeboard.py)."""
+    from app.devices import client
+    from tests.fakeboard import Lan
+
+    network = Lan()
+    monkeypatch.setattr(client, "transport", network.transport())
+    client.reset_locks()
+    yield network
+    client.reset_locks()

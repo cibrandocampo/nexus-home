@@ -44,6 +44,7 @@ services:
       APP_NAME: E2E App
       DATABASE_URL: postgresql+asyncpg://e2e:e2e@db:5432/e2e
       SECRET_KEY: e2e-only-secret-key-not-for-deployment-0123456789
+      DEVICE_TOKEN_KEY: tvvrxZOGUWmbvodmRntVIw1lQGK5i34S3nmOK2zrv6U=
       COOKIE_SECURE: "false"
       SITE_URL: http://server:8000
       ALLOW_SELF_SIGNUP: "true"

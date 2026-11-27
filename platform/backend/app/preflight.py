@@ -12,7 +12,8 @@ def main() -> int:
     if problems:
         print(
             "Refusing to start in production. Set a long random SECRET_KEY "
-            "(for example: openssl rand -hex 32).",
+            "(for example: openssl rand -hex 32) and a new DEVICE_TOKEN_KEY "
+            "(openssl rand -base64 32 | tr '+/' '-_'); see docs/configuration.md.",
             file=sys.stderr,
         )
         return 1

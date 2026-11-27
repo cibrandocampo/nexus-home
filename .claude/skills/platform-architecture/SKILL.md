@@ -31,6 +31,7 @@ Browser ── React SPA (frontend/) ──fetch /api──► FastAPI app (back
 | `core/` | cross-cutting: `config` (settings), `db` (engine, sessions, `Base`), `errors` (envelope, `AppError`), `security` (passwords, JWT), `ratelimit`, `scheduler`, `headers`, `logging`, `types` |
 | `auth/` | `/api/auth`: login by code or password, refresh/logout, own profile; `sessions` (tokens), `otp`, `deps` (`current_user`, `require_role`), disposable domains |
 | `users/` | `models.User`, `/api/users` admin API, `service` (rules shared by endpoints), `bootstrap` (first admin) |
+| `devices/` | `models.Device`, `/api/devices` (list/read for users; add/remove for admins), `client` (a board's `/api/v1`: one request at a time per host, raw UTF-8 bodies, `DeviceError`), `crypto` (device tokens at rest, Fernet with `DEVICE_TOKEN_KEY`), `drivers` (per device type: settings fields, firmware prefix), `service` |
 | `emails/` | Jinja2 templates per language (`templates/<name>/<lang>.*`), `sender` |
 | `models.py` | imports every model module for Alembic |
 
