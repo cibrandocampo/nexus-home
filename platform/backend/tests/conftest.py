@@ -53,6 +53,9 @@ def fresh_state():
     for limit in ratelimit.ALL:
         limit.reset()
     sender.outbox.clear()
+    from app.devices.bus import bus
+
+    bus.reset()
     blocked_domains.cache_clear()
     ratelimit._trusted_networks.cache_clear()
     yield

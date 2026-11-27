@@ -13,6 +13,7 @@ from app.core.db import get_engine, get_sessionmaker
 from app.core.errors import UnhandledErrorMiddleware, register_error_handlers
 from app.core.headers import SecurityHeadersMiddleware
 from app.core.logging import configure_logging
+from app.devices import poller
 from app.devices.router import router as devices_router
 from app.spa import mount_spa
 from app.users.bootstrap import ensure_admin
@@ -24,7 +25,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async with get_sessionmaker()() as db:
         await ensure_admin(db)
     cleanup = scheduler.start()
+    polling = poller.start()
     yield
+    await poller.stop(polling)
     await scheduler.stop(cleanup)
     # Close pooled database connections on shutdown.
     await get_engine().dispose()

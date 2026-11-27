@@ -9,7 +9,7 @@ from app.auth.deps import RequireAdmin, RequireUser
 from app.core import ratelimit
 from app.core.db import get_session
 from app.core.types import NO_NUL, IdPath
-from app.devices import scan, service
+from app.devices import poller, scan, service
 from app.devices.schemas import (
     DeviceCreate,
     DeviceOut,
@@ -42,7 +42,9 @@ async def list_devices(
 async def add_device(body: DeviceCreate, admin: RequireAdmin, db: Db) -> DeviceOut:
     # It checks a secret against a board: limited like the other secret checks.
     ratelimit.DEVICE_ADD_USER.hit(str(admin.id))
-    return DeviceOut.model_validate(await service.add_device(db, body.host, body.token))
+    device = await service.add_device(db, body.host, body.token)
+    poller.notify()  # start polling it now
+    return DeviceOut.model_validate(device)
 
 
 # Before /{device_pk}: these paths would otherwise match it and fail as a non-integer id.
@@ -67,3 +69,4 @@ async def get_device(device_pk: IdPath, user: RequireUser, db: Db) -> DeviceOut:
 @router.delete("/{device_pk}", status_code=204)
 async def delete_device(device_pk: IdPath, admin: RequireAdmin, db: Db) -> None:
     await service.delete_device(db, device_pk)
+    poller.notify()

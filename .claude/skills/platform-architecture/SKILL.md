@@ -18,7 +18,8 @@ Browser ── React SPA (frontend/) ──fetch /api──► FastAPI app (back
 - **One process, one image.** In production the FastAPI app also serves the built SPA (`app/spa.py`):
   `/api/*` is the API, `/assets/*` the hashed bundle, every other GET falls back to `index.html`.
   In development Vite serves the SPA on :15173 and proxies `/api` to the backend on :18000.
-- **One instance.** Rate limits (`core/ratelimit.py`) and the clean-up task (`core/scheduler.py`) live
+- **One instance.** Rate limits (`core/ratelimit.py`), the clean-up task (`core/scheduler.py`), the device
+  poller and its event bus (`devices/poller.py`, `devices/bus.py`) live
   in the process. Running several replicas needs a shared store first — raise it with the user.
 - **Behind a reverse proxy** for HTTPS (Synology DSM). The app trusts forwarded addresses only from
   `TRUSTED_PROXIES`.
@@ -31,7 +32,7 @@ Browser ── React SPA (frontend/) ──fetch /api──► FastAPI app (back
 | `core/` | cross-cutting: `config` (settings), `db` (engine, sessions, `Base`), `errors` (envelope, `AppError`), `security` (passwords, JWT), `ratelimit`, `scheduler`, `headers`, `logging`, `types` |
 | `auth/` | `/api/auth`: login by code or password, refresh/logout, own profile; `sessions` (tokens), `otp`, `deps` (`current_user`, `require_role`), disposable domains |
 | `users/` | `models.User`, `/api/users` admin API, `service` (rules shared by endpoints), `bootstrap` (first admin) |
-| `devices/` | `models.Device`, `/api/devices` (list/read for users; add/remove for admins), `client` (a board's `/api/v1`: one request at a time per host, raw UTF-8 bodies, `DeviceError`), `crypto` (device tokens at rest, Fernet with `DEVICE_TOKEN_KEY`), `drivers` (per device type: settings fields, firmware prefix), `service` |
+| `devices/` | `models.Device`, `/api/devices` (list/read for users; add/remove for admins), `client` (a board's `/api/v1`: one request at a time per host, raw UTF-8 bodies, `DeviceError`), `crypto` (device tokens at rest, Fernet with `DEVICE_TOKEN_KEY`), `drivers` (per device type: settings fields, firmware prefix), `scan` (discovery), `poller` (state polling, online/offline, restarts), `bus` (in-process events), `service` |
 | `emails/` | Jinja2 templates per language (`templates/<name>/<lang>.*`), `sender` |
 | `models.py` | imports every model module for Alembic |
 
@@ -73,7 +74,7 @@ convenience only).
 ## Red flags — stop and discuss
 
 Business rules in a router or a React component; a new global state store; a background job outside
-`core/scheduler.py`; a second database or cache; storing tokens in `localStorage`; disabling a security
+`core/scheduler.py` and `devices/poller.py`; a second database or cache; storing tokens in `localStorage`; disabling a security
 header or CSP rule to make something work.
 
 Document significant decisions in the plan or task file.

@@ -203,11 +203,19 @@ async def test_probes_use_the_scan_timeout(lan, monkeypatch):
     assert seen == [0.7]
 
 
-async def test_one_scan_at_a_time(client, lan, as_admin):
+async def test_one_scan_at_a_time(client, lan, as_admin, monkeypatch):
     lan.add("10.1.5.1").delay_s = 0.2
+    probing = asyncio.Event()
+    real_probe_all = scan.probe_all
+
+    async def probe_all(hosts):
+        probing.set()
+        return await real_probe_all(hosts)
+
+    monkeypatch.setattr(scan, "probe_all", probe_all)
 
     first = asyncio.create_task(run(client, as_admin, ["10.1.5.1"]))
-    await asyncio.sleep(0.05)
+    await asyncio.wait_for(probing.wait(), 5)  # the first scan is probing
     second = await run(client, as_admin, ["10.1.5.1"])
     assert (await first).status_code == 200
 

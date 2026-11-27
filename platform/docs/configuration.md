@@ -105,6 +105,9 @@ in `$DATA_PATH/postgres`.
 | `SCAN_RANGES` | `10.1.2.0/23` | Default ranges of the discovery scan (admins can edit them before each scan): comma-separated IPv4 CIDRs or addresses, at most 1024 addresses in all (`scan_too_large`). |
 | `SCAN_CONCURRENCY` | `64` | Addresses probed at once (1 to 256). Each address gets one probe, so no board ever sees more than one request from the scan. |
 | `SCAN_TIMEOUT_S` | `1.5` | Seconds to wait for each address. With the defaults a /24 takes about 8 s and the default /23 about 16 s: most addresses do not answer and wait the full timeout. Each address is probed once: a board busy answering someone else at that moment can be missed; scan again. |
+| `POLL_INTERVAL_S` | `2` | Seconds between two `GET /state` reads of each device (0.5 to 60). The device page shows changes within about this time. |
+| `POLL_OFFLINE_AFTER` | `3` | Failed reads in a row before a device counts as offline. A failed read is retried after 0.5 s, so with `DEVICE_TIMEOUT_S` 3 a silent board is offline after about 12 s. |
+| `POLL_OFFLINE_INTERVAL_S` | `5` | Seconds between reads of an offline device; it is back online on the first answer. |
 
 ### Device simulators (development only)
 
