@@ -15,8 +15,9 @@
     "auto": "Sistema"
   },
   "home": {
-    "title": "Bienvenida",
-    "text": "Empieza a construir tu proyecto desde aquí."
+    "title": "Inicio",
+    "empty": "Todavía no hay dispositivos.",
+    "addDevice": "Añadir un dispositivo"
   },
   "notFound": {
     "title": "Página no encontrada",
@@ -26,7 +27,36 @@
   "errors": {
     "title": "Algo ha fallado",
     "generic": "Error inesperado. Inténtalo de nuevo.",
-    "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo."
+    "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
+    "door_busy": "La puerta se está moviendo o se acaba de accionar. Vuelve a intentarlo en un momento.",
+    "device_offline": "El dispositivo no tiene conexión. Comprueba que esté encendido y en la red.",
+    "device_unreachable": "El dispositivo no respondió. Vuelve a intentarlo en un momento.",
+    "device_error": "El dispositivo respondió con un error. Vuelve a intentarlo en un momento.",
+    "device_token_invalid": "El dispositivo rechazó el token de acceso guardado. Un administrador tiene que volver a introducirlo.",
+    "device_token_unreadable": "No se puede leer el token de acceso guardado. Un administrador tiene que volver a introducirlo.",
+    "invalid_duration": "Ese tiempo de luz no es válido.",
+    "entity_not_found": "El dispositivo no tiene esta función.",
+    "command_not_found": "El dispositivo no acepta esta acción.",
+    "device_not_found": "El dispositivo ya no existe.",
+    "invalid_params": "Esta acción no admite opciones.",
+    "device_exists": "Este dispositivo ya está añadido.",
+    "device_token_required": "Este dispositivo tiene un token de acceso: introdúcelo para añadirlo.",
+    "not_a_device": "No hay ningún dispositivo de nexusHome en esta dirección.",
+    "invalid_scan_ranges": "Los rangos de red de la configuración no son válidos. Revisa SCAN_RANGES.",
+    "scan_in_progress": "Ya hay una búsqueda en marcha. Espera a que termine.",
+    "scan_too_large": "Estos rangos tienen más de 1024 direcciones. Busca en un rango más pequeño.",
+    "device_has_no_token": "Este dispositivo no tiene un token de acceso guardado.",
+    "device_mismatch": "En esa dirección responde otro dispositivo.",
+    "device_save_failed": "El dispositivo no pudo guardar sus ajustes. Vuelve a intentarlo.",
+    "device_token_unchanged": "El dispositivo respondió pero mantuvo su token de acceso anterior.",
+    "device_token_unconfirmed": "El dispositivo no confirmó el token de acceso nuevo. Se guardan los dos: revisa el dispositivo.",
+    "settings_not_supported": "Este tipo de dispositivo no tiene ajustes aquí.",
+    "invalid_name": "El dispositivo rechazó este nombre.",
+    "invalid_open_time": "El dispositivo rechazó este tiempo de apertura (de 5 a 100 s).",
+    "invalid_close_time": "El dispositivo rechazó este tiempo de cierre (de 10 a 100 s).",
+    "invalid_light_time": "El dispositivo rechazó este tiempo de luz (de 10 a 600 s).",
+    "invalid_night_level": "El dispositivo rechazó este nivel de noche (de 1 a 1023).",
+    "invalid_display": "El dispositivo rechazó este ajuste de la pantalla."
   },
   "language": {
     "label": "Idioma"
@@ -177,5 +207,103 @@
       "forbidden": "Ya no tienes permiso para esto.",
       "generic": "Algo ha fallado. Inténtalo de nuevo."
     }
+  },
+  "devices": {
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "offlineSince": "Sin conexión, visto por última vez {{time}}",
+    "details": "Ver el dispositivo"
+  },
+  "door": {
+    "states": {
+      "open": "Abierta",
+      "closed": "Cerrada",
+      "opening": "Abriéndose",
+      "closing": "Cerrándose",
+      "stopped": "Parada a medio camino",
+      "unknown": "Desconocido"
+    },
+    "since": "Desde hace {{time}}, la movió {{source}}",
+    "since_nobody": "Desde hace {{time}}",
+    "sources": {
+      "button": "el pulsador",
+      "remote": "el mando",
+      "api": "la aplicación",
+      "sensor": "alguien a mano (lo vio el sensor)",
+      "auto": "la placa"
+    },
+    "closeFailed": "La puerta no se cerró. Comprueba que no haya nada en medio.",
+    "commands": {
+      "open": "Abrir",
+      "close": "Cerrar",
+      "stop": "Parar"
+    },
+    "confirm": {
+      "text": "La puerta es la entrada de la casa.",
+      "open": {
+        "title": "¿Abrir la puerta de {{name}}?",
+        "action": "Abrir la puerta"
+      },
+      "close": {
+        "title": "¿Cerrar la puerta de {{name}}?",
+        "action": "Cerrar la puerta"
+      },
+      "stop": {
+        "title": "¿Parar la puerta de {{name}}?",
+        "action": "Parar la puerta"
+      }
+    }
+  },
+  "light": {
+    "on": "Luz encendida",
+    "off": "Luz apagada",
+    "onFor": "Luz encendida, quedan {{time}}",
+    "turnOn": "Encender",
+    "turnOff": "Apagar",
+    "duration": "Mantener la luz encendida",
+    "durations": {
+      "0": "Hasta apagarla",
+      "600": "10 minutos",
+      "3600": "1 hora",
+      "default": "El tiempo habitual"
+    }
+  },
+  "device": {
+    "door": "Puerta",
+    "light": "Luz",
+    "sensors": "Sensores",
+    "about": "Dispositivo",
+    "notFound": "Dispositivo no encontrado",
+    "fields": {
+      "model": "Modelo",
+      "firmware": "Firmware",
+      "modem": "Módulo WiFi",
+      "address": "Dirección",
+      "id": "Identificador",
+      "uptime": "Encendido desde hace",
+      "lastSeen": "Visto por última vez",
+      "ip": "Dirección IP"
+    }
+  },
+  "entities": {
+    "names": {
+      "door_problem": "Problema en la puerta",
+      "night": "Noche",
+      "light_level": "Nivel de luz",
+      "rssi": "Señal WiFi"
+    },
+    "values": {
+      "door_problem": {
+        "true": "La puerta no se cerró",
+        "false": "Ninguno"
+      },
+      "night": {
+        "true": "Noche",
+        "false": "Día"
+      }
+    },
+    "yes": "Sí",
+    "no": "No",
+    "unknown": "Desconocido"
   }
 }

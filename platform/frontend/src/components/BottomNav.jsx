@@ -9,7 +9,7 @@ import classes from './BottomNav.module.css';
 
 // Tabs: `match` are the routes that keep a tab current (its own sub-pages included).
 const TABS = [
-  { to: '/', icon: House, label: 'nav.home', match: ['/'], min: 'user' },
+  { to: '/', icon: House, label: 'nav.home', match: ['/', '/devices/*'], min: 'user' },
   { to: '/profile', icon: UserRound, label: 'nav.profile', match: ['/profile'], min: 'none' },
   { to: '/admin/users', icon: Users, label: 'nav.users', match: ['/admin/users/*'], min: 'admin' },
 ];

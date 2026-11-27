@@ -15,6 +15,9 @@ A paginated list, newest first: time (user's time zone; date headers per day), d
 sensor, auto) and the user's name when known ("Door opening · API · Ana"). Filters: device (global
 page only), event type (multi-select), from/to dates; filters kept in the URL query.
 
+A link "History" on the device page (`/devices/:id`, T012) leads to `/devices/:id/history` (moved here
+from T012: the route is created by this task).
+
 ## Step 2 — i18n and tests
 Event, source and reason names in the three languages (the list from the garage README "Event log").
 Tests: rendering of each event family, the user name, filters update the query and the URL,

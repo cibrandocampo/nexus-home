@@ -18,6 +18,9 @@ const ProfilePage = lazy(() =>
 const UsersPage = lazy(() =>
   import('./pages/admin/UsersPage').then((module) => ({ default: module.UsersPage })),
 );
+const DevicePage = lazy(() =>
+  import('./pages/DevicePage').then((module) => ({ default: module.DevicePage })),
+);
 
 export function AppRoutes() {
   return (
@@ -36,6 +39,7 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequireRole min="user" />}>
               <Route index element={<HomePage />} />
+              <Route path="/devices/:id" element={<DevicePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

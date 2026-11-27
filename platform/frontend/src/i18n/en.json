@@ -15,8 +15,9 @@
     "auto": "System"
   },
   "home": {
-    "title": "Welcome",
-    "text": "Start building your project from here."
+    "title": "Home",
+    "empty": "No devices yet.",
+    "addDevice": "Add a device"
   },
   "notFound": {
     "title": "Page not found",
@@ -26,7 +27,36 @@
   "errors": {
     "title": "Something went wrong",
     "generic": "Unexpected error. Please try again.",
-    "rate_limited": "Too many attempts. Please wait a moment and try again."
+    "rate_limited": "Too many attempts. Please wait a moment and try again.",
+    "door_busy": "The door is moving or was just triggered. Try again in a moment.",
+    "device_offline": "The device is offline. Check that it is powered and on the network.",
+    "device_unreachable": "The device did not answer. Try again in a moment.",
+    "device_error": "The device answered with an error. Try again in a moment.",
+    "device_token_invalid": "The device refused the stored access token. An administrator must enter it again.",
+    "device_token_unreadable": "The stored access token cannot be read. An administrator must enter it again.",
+    "invalid_duration": "That light time is not valid.",
+    "entity_not_found": "The device does not have this function.",
+    "command_not_found": "The device does not accept this action.",
+    "device_not_found": "The device no longer exists.",
+    "invalid_params": "This action takes no options.",
+    "device_exists": "This device is already added.",
+    "device_token_required": "This device has an access token: enter it to add the device.",
+    "not_a_device": "There is no nexusHome device at this address.",
+    "invalid_scan_ranges": "The network ranges in the settings are not valid. Check SCAN_RANGES.",
+    "scan_in_progress": "A scan is already running. Wait for it to finish.",
+    "scan_too_large": "These ranges hold more than 1024 addresses. Scan a smaller range.",
+    "device_has_no_token": "This device has no stored access token.",
+    "device_mismatch": "Another device answers at that address.",
+    "device_save_failed": "The device could not store its settings. Try again.",
+    "device_token_unchanged": "The device answered but kept its old access token.",
+    "device_token_unconfirmed": "The device did not confirm the new access token. Both tokens are kept: check the device.",
+    "settings_not_supported": "This kind of device has no settings here.",
+    "invalid_name": "The device refused this name.",
+    "invalid_open_time": "The device refused this opening time (5 to 100 s).",
+    "invalid_close_time": "The device refused this closing time (10 to 100 s).",
+    "invalid_light_time": "The device refused this light time (10 to 600 s).",
+    "invalid_night_level": "The device refused this night level (1 to 1023).",
+    "invalid_display": "The device refused this display setting."
   },
   "language": {
     "label": "Language"
@@ -177,5 +207,103 @@
       "forbidden": "You no longer have permission for this.",
       "generic": "Something went wrong. Please try again."
     }
+  },
+  "devices": {
+    "online": "Online",
+    "offline": "Offline",
+    "offlineSince": "Offline, last seen {{time}}",
+    "details": "See the device"
+  },
+  "door": {
+    "states": {
+      "open": "Open",
+      "closed": "Closed",
+      "opening": "Opening",
+      "closing": "Closing",
+      "stopped": "Stopped part way",
+      "unknown": "Unknown"
+    },
+    "since": "For {{time}}, moved by {{source}}",
+    "since_nobody": "For {{time}}",
+    "sources": {
+      "button": "the button",
+      "remote": "the remote",
+      "api": "the app",
+      "sensor": "hand (seen by the sensor)",
+      "auto": "the board"
+    },
+    "closeFailed": "The door did not close. Check that nothing is in the way.",
+    "commands": {
+      "open": "Open",
+      "close": "Close",
+      "stop": "Stop"
+    },
+    "confirm": {
+      "text": "The door is the house entrance.",
+      "open": {
+        "title": "Open the door of {{name}}?",
+        "action": "Open the door"
+      },
+      "close": {
+        "title": "Close the door of {{name}}?",
+        "action": "Close the door"
+      },
+      "stop": {
+        "title": "Stop the door of {{name}}?",
+        "action": "Stop the door"
+      }
+    }
+  },
+  "light": {
+    "on": "Light on",
+    "off": "Light off",
+    "onFor": "Light on, {{time}} left",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "duration": "Keep the light on",
+    "durations": {
+      "0": "Until turned off",
+      "600": "10 minutes",
+      "3600": "1 hour",
+      "default": "Usual time"
+    }
+  },
+  "device": {
+    "door": "Door",
+    "light": "Light",
+    "sensors": "Sensors",
+    "about": "Device",
+    "notFound": "Device not found",
+    "fields": {
+      "model": "Model",
+      "firmware": "Firmware",
+      "modem": "WiFi module",
+      "address": "Address",
+      "id": "Device id",
+      "uptime": "Running for",
+      "lastSeen": "Last seen",
+      "ip": "IP address"
+    }
+  },
+  "entities": {
+    "names": {
+      "door_problem": "Door problem",
+      "night": "Night",
+      "light_level": "Light level",
+      "rssi": "WiFi signal"
+    },
+    "values": {
+      "door_problem": {
+        "true": "The door did not close",
+        "false": "None"
+      },
+      "night": {
+        "true": "Night",
+        "false": "Day"
+      }
+    },
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown"
   }
 }

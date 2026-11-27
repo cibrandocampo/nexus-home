@@ -73,7 +73,7 @@ async def test_a_new_rev_is_saved_and_published(db, lan, device, events):
     assert drain(events) == [StateChanged(device.id, 7)]
 
 
-async def test_the_same_rev_only_touches_last_seen(db, lan, device, events):
+async def test_the_same_rev_refreshes_the_counters_without_an_event(db, lan, device, events):
     p = DevicePoller(device.id)
     await p.poll_once()
     drain(events)
@@ -84,7 +84,7 @@ async def test_the_same_rev_only_touches_last_seen(db, lan, device, events):
     await p.poll_once()
 
     row = await reload(db, device)
-    assert row.state["light_level"] == 400  # not saved: rev unchanged
+    assert row.state["light_level"] == 999  # counters and readings move without a new rev
     assert (row.uptime_s, row.last_seen_at > first_seen) == (103, True)
     assert drain(events) == []
 

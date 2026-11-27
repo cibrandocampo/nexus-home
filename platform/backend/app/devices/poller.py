@@ -34,17 +34,22 @@ REBOOT_SLACK_S = 5  # uptime and wall clock drift apart by a request or two, not
 def apply_state(
     device: Device, state: dict[str, Any], now: datetime, *, force: bool = False
 ) -> bool:
-    """Store a fresh `/state` answer; True when it was saved: a higher `rev` (a poll that started
-    before a command answered must not put the older state back), or `force` after a restart
-    (`rev` lives in the board's RAM and starts again at every boot)."""
+    """Store a fresh `/state` answer; True when its `rev` is new (a change to publish).
+
+    Every answer that is not older than the stored one is kept: counters such as the door's
+    `since_s` and the light's `remaining_s` move without changing `rev`, and the pages show them.
+    An older `rev` (a poll that started before a command answered) never puts the older state back,
+    except with `force` after a restart (`rev` lives in the board's RAM and starts again at boot).
+    """
     device.last_seen_at = now
     uptime = state.get("uptime_s")
     device.uptime_s = uptime if isinstance(uptime, int) and 0 <= uptime <= MAX_DB_INT else None
-    if device.rev is not None and state["rev"] <= device.rev and not force:
+    if device.rev is not None and state["rev"] < device.rev and not force:
         return False
+    changed = force or state["rev"] != device.rev
     device.state = state
     device.rev = state["rev"]
-    return True
+    return changed
 
 
 def restarted(device: Device, uptime_s: int, now: datetime) -> bool:
