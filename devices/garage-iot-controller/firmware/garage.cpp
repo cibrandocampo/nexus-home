@@ -413,12 +413,17 @@ Cmd doorClose(Source src) {
   }
 }
 
+// A stop always leaves the door still: inside the pulse gap (just after an open, or the first pulse of a
+// reversal) the stop pulse is queued and sent when the gap ends, instead of being refused.
 Cmd doorStop(Source src) {
   Lock l;
   const bool cancelled = s.queued;
   s.queued = 0;
   if (s.door != Door::Opening && s.door != Door::Closing) return cancelled ? Cmd::Ok : Cmd::Noop;
-  return pulse(src) ? Cmd::Ok : Cmd::Busy;
+  if (pulse(src)) return Cmd::Ok;
+  s.queued = 1;
+  s.queuedSrc = src;
+  return Cmd::Ok;
 }
 
 Cmd doorToggle(Source src) {

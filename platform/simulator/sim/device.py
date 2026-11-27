@@ -147,7 +147,7 @@ def validate(d: Settings) -> str | None:
 @dataclass
 class Identity:
     id: str
-    version: str = "2.0.5"
+    version: str = "2.0.6"
     modem_fw: str = "0.6.0"
     ip: str = "127.0.0.1"
 
