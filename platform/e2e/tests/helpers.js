@@ -69,7 +69,7 @@ export async function loginWithPassword(page, email, password) {
 
 export async function loginAsAdmin(page) {
   await loginWithPassword(page, ADMIN.email, ADMIN.password);
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
 }
 
 // A new account through self sign-up, named, left waiting for access.

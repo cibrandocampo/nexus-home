@@ -22,7 +22,7 @@ test('the session survives a reload (refresh cookie)', async ({ page }) => {
 
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
 });
 
 test('after logging out, protected pages ask to sign in again', async ({ page }) => {
