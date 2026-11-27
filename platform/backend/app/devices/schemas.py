@@ -3,7 +3,9 @@
 from datetime import datetime
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+
+from app.devices.scan import parse_range
 
 # An IPv4 address or a hostname, with an optional port (the simulators in the dev stack).
 Host = Annotated[
@@ -55,3 +57,41 @@ class DevicePage(BaseModel):
     total: int
     page: int
     size: int
+
+
+class ScanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # None: the configured SCAN_RANGES. Each item an IPv4 CIDR or address (checked by the scan).
+    ranges: list[Annotated[str, StringConstraints(max_length=43)]] | None = Field(
+        default=None, min_length=1, max_length=16
+    )
+
+    @field_validator("ranges")
+    @classmethod
+    def _cidrs(cls, value: list[str] | None) -> list[str] | None:
+        if value is not None:
+            for item in value:
+                parse_range(item)  # ValueError → 422
+        return value
+
+
+class ScanResult(BaseModel):
+    device_id: str
+    name: str
+    model: str
+    sw_version: str
+    host: str
+    auth: bool
+    registered: bool
+    id: int | None
+
+
+class ScanOut(BaseModel):
+    items: list[ScanResult]
+    scanned: int
+    duration_s: float
+
+
+class ScanRanges(BaseModel):
+    ranges: list[str]

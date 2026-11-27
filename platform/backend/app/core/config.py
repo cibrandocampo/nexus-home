@@ -4,6 +4,7 @@ import base64
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,6 +68,10 @@ class Settings(BaseSettings):
     # this development default; losing the key means re-entering every device token.
     device_token_key: str = "w8okSphRDml6-rycgRvw2UAF5b4bdrWFKXFg4HpCNl8="  # noqa: S105 - dev key
     device_timeout_s: float = 3.0  # per request to a board
+    # Discovery: comma-separated IPv4 CIDRs (at most 1024 addresses in all), probes at once, timeout
+    scan_ranges: str = "10.1.2.0/23"
+    scan_concurrency: int = Field(default=64, ge=1, le=256)
+    scan_timeout_s: float = Field(default=1.5, gt=0, le=10)
 
 
 DEFAULT_SECRET_KEY = Settings.model_fields["secret_key"].default

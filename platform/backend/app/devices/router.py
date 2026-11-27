@@ -9,8 +9,15 @@ from app.auth.deps import RequireAdmin, RequireUser
 from app.core import ratelimit
 from app.core.db import get_session
 from app.core.types import NO_NUL, IdPath
-from app.devices import service
-from app.devices.schemas import DeviceCreate, DeviceOut, DevicePage
+from app.devices import scan, service
+from app.devices.schemas import (
+    DeviceCreate,
+    DeviceOut,
+    DevicePage,
+    ScanOut,
+    ScanRanges,
+    ScanRequest,
+)
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -36,6 +43,20 @@ async def add_device(body: DeviceCreate, admin: RequireAdmin, db: Db) -> DeviceO
     # It checks a secret against a board: limited like the other secret checks.
     ratelimit.DEVICE_ADD_USER.hit(str(admin.id))
     return DeviceOut.model_validate(await service.add_device(db, body.host, body.token))
+
+
+# Before /{device_pk}: these paths would otherwise match it and fail as a non-integer id.
+@router.get("/scan-ranges")
+async def scan_ranges(admin: RequireAdmin) -> ScanRanges:
+    return ScanRanges(ranges=scan.configured_ranges())
+
+
+@router.post("/scan")
+async def scan_network(admin: RequireAdmin, db: Db, body: ScanRequest | None = None) -> ScanOut:
+    ratelimit.SCAN_USER.hit(str(admin.id))
+    ranges = body.ranges if body and body.ranges else scan.configured_ranges()
+    items, scanned, duration = await scan.scan(db, ranges)
+    return ScanOut(items=items, scanned=scanned, duration_s=duration)
 
 
 @router.get("/{device_pk}")

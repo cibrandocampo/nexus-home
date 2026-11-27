@@ -22,7 +22,7 @@ Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Br
 | ID | Title | Depends on | Status | QA |
 |----|-------|------------|--------|----|
 | T006 | Device registry, token encryption and the device client | — | Completed | Approved |
-| T007 | Discovery scan | T006 | Pending | — |
+| T007 | Discovery scan | T006 | Completed (DoD 3: bench board unplugged) | Approved |
 | T008 | Polling, online/offline, event bus | T006 | Pending | — |
 | T009 | Event history | T008 | Pending | — |
 | T010 | Commands and their audit | T009 | Pending | — |

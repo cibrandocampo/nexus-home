@@ -102,6 +102,9 @@ in `$DATA_PATH/postgres`.
 |---|---|---|
 | `DEVICE_TOKEN_KEY` | the development key | Fernet key (url-safe base64 of 32 bytes) that encrypts the device tokens in the database. **Production refuses to start** with the development key or a malformed one. Generate one: `openssl rand -base64 32 \| tr '+/' '-_'`. Back it up with the database: if it is lost or changed, every stored token becomes unreadable and each device answers `device_token_unreadable` until an admin re-enters its token. |
 | `DEVICE_TIMEOUT_S` | `3` | Seconds to wait for a board's answer before it counts as unreachable. |
+| `SCAN_RANGES` | `10.1.2.0/23` | Default ranges of the discovery scan (admins can edit them before each scan): comma-separated IPv4 CIDRs or addresses, at most 1024 addresses in all (`scan_too_large`). |
+| `SCAN_CONCURRENCY` | `64` | Addresses probed at once (1 to 256). Each address gets one probe, so no board ever sees more than one request from the scan. |
+| `SCAN_TIMEOUT_S` | `1.5` | Seconds to wait for each address. With the defaults a /24 takes about 8 s and the default /23 about 16 s: most addresses do not answer and wait the full timeout. Each address is probed once: a board busy answering someone else at that moment can be missed; scan again. |
 
 ### Device simulators (development only)
 

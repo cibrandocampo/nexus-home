@@ -30,12 +30,12 @@ Errors in use:
 
 | Status | Codes |
 |---|---|
-| 400 | `invalid_request`, `invalid_credentials`, `weak_password`, `password_required`, `password_not_allowed`, `method_mismatch`, `disposable_email`, `device_token_invalid` (on add), `device_token_required` |
+| 400 | `invalid_request`, `invalid_credentials`, `weak_password`, `password_required`, `password_not_allowed`, `method_mismatch`, `disposable_email`, `device_token_invalid` (on add), `device_token_required`, `scan_too_large`, `invalid_scan_ranges` (bad `SCAN_RANGES`) |
 | 401 | `unauthorized`, `token_expired`, `refresh_in_progress` (another tab is rotating: retry) |
 | 403 | `forbidden`, `account_disabled` |
 | 404 | `user_not_found`, `device_not_found`, `not_found` |
 | 405 | `method_not_allowed` (wrong method on an existing route) |
-| 409 | `email_taken`, `last_admin`, `cannot_delete_self`, `device_exists`, `device_token_invalid` (stored token refused by the board), `device_token_unreadable` (`DEVICE_TOKEN_KEY` changed) |
+| 409 | `email_taken`, `last_admin`, `cannot_delete_self`, `scan_in_progress`, `device_exists`, `device_token_invalid` (stored token refused by the board), `device_token_unreadable` (`DEVICE_TOKEN_KEY` changed) |
 | 422 | `validation_error`, `not_a_device` |
 | 429 | `rate_limited` (with `Retry-After`), `locked` (password lockout) |
 | 500 / 503 | `internal_error` / `database_unavailable` |
