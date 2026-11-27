@@ -6,7 +6,8 @@
     "home": "Home",
     "label": "Main",
     "profile": "Profile",
-    "users": "Users"
+    "users": "Users",
+    "history": "History"
   },
   "colorScheme": {
     "label": "Colour scheme",
@@ -283,7 +284,8 @@
       "uptime": "Running for",
       "lastSeen": "Last seen",
       "ip": "IP address"
-    }
+    },
+    "history": "See its history"
   },
   "entities": {
     "names": {
@@ -305,5 +307,96 @@
     "yes": "Yes",
     "no": "No",
     "unknown": "Unknown"
+  },
+  "history": {
+    "title": "History",
+    "deviceTitle": "History of {{name}}",
+    "back": "Back to {{name}}",
+    "device": "Device",
+    "allDevices": "All devices",
+    "allEvents": "All events",
+    "from": "From",
+    "to": "To",
+    "empty": "Nothing has happened yet.",
+    "noMatch": "No events match these filters.",
+    "by": "by {{name}}",
+    "someone": "a user without a name",
+    "groups": {
+      "door": "Door",
+      "light": "Light",
+      "daylight": "Day and night",
+      "device": "Device"
+    },
+    "filter": {
+      "door_opening": "Door opening",
+      "door_open": "Door open or stopped",
+      "door_closing": "Door closing",
+      "door_closed": "Door closed or stopped",
+      "close_failed": "Close failed",
+      "button_ignored": "Button press ignored",
+      "light_on": "Light on",
+      "light_off": "Light off",
+      "night": "Night came",
+      "day": "Day came",
+      "boot": "Started",
+      "wifi_up": "Connected to WiFi",
+      "wifi_down": "WiFi lost",
+      "wifi_changed": "WiFi network changed",
+      "wifi_change_failed": "WiFi change failed",
+      "watchdog_reset": "Restarted by the watchdog",
+      "settings_changed": "Settings changed",
+      "settings_save_failed": "Settings not saved",
+      "setup_mode": "Setup mode"
+    },
+    "events": {
+      "label": "Events",
+      "door_opening": "Door opening",
+      "door_open": "Door open",
+      "door_closing": "Door closing",
+      "door_closed": "Door closed",
+      "close_failed": "The door did not close after {{time}}",
+      "button_ignored": "Button press ignored",
+      "light_on_timed": "Light on for {{time}}",
+      "light_on_untimed": "Light on, no timer",
+      "light_off": "Light off",
+      "night": "Night came",
+      "day": "Day came",
+      "boot": "Device started",
+      "wifi_up": "Connected to WiFi",
+      "wifi_down": "WiFi connection lost",
+      "wifi_changed": "WiFi network changed",
+      "wifi_change_failed": "Could not join the new WiFi network",
+      "watchdog_reset": "Restarted by the watchdog",
+      "settings_changed": "Settings changed",
+      "settings_save_failed": "Settings could not be saved",
+      "setup_mode": "Setup mode started"
+    },
+    "sources": {
+      "button": "button or remote",
+      "api": "app",
+      "sensor": "seen by the sensor",
+      "auto": "automatic"
+    },
+    "reasons": {
+      "command": "the door was still",
+      "stopped": "the door was stopped",
+      "travel_end": "the opening time ended",
+      "no_movement": "the door did not move",
+      "sensor_closed": "the closed sensor confirmed it",
+      "sensor_released": "the door left the closed sensor",
+      "came_back": "the door came back down",
+      "too_soon": "too soon after the last press",
+      "startup": "read at start-up"
+    },
+    "pages": {
+      "first": "First page",
+      "previous": "Previous page",
+      "next": "Next page",
+      "last": "Last page",
+      "page": "Page {{page}}"
+    },
+    "all": "See the history of every device",
+    "pastTheEnd": "There are no events on this page.",
+    "firstPage": "Go to the first page"
   }
 }

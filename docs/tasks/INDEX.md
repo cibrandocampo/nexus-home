@@ -28,7 +28,7 @@ Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Br
 | T010 | Commands and their audit | T009 | Completed (DoD 3: bench board unplugged) | Approved |
 | T011 | Device settings, restart and token rotation | T006 | Completed (DoD 3: bench board unplugged) | Approved |
 | T012 | Frontend: dashboard and device page | T010 | Completed | Approved |
-| T013 | Frontend: event history | T012 | Pending | — |
+| T013 | Frontend: event history | T012 | Completed | Approved |
 | T014 | Frontend: scan, add, remove and device settings (admin) | T012, T007, T011 | Pending | — |
 | T015 | End-to-end tests, bench-board checks, docs | T013, T014 | Pending | — |
 

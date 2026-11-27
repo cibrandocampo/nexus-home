@@ -6,7 +6,8 @@
     "home": "Inicio",
     "label": "Principal",
     "profile": "Perfil",
-    "users": "Usuarios"
+    "users": "Usuarios",
+    "history": "Historial"
   },
   "colorScheme": {
     "label": "Tema",
@@ -283,7 +284,8 @@
       "uptime": "Aceso dende hai",
       "lastSeen": "Visto por última vez",
       "ip": "Enderezo IP"
-    }
+    },
+    "history": "Ver o seu historial"
   },
   "entities": {
     "names": {
@@ -305,5 +307,96 @@
     "yes": "Si",
     "no": "Non",
     "unknown": "Descoñecido"
+  },
+  "history": {
+    "title": "Historial",
+    "deviceTitle": "Historial de {{name}}",
+    "back": "Volver a {{name}}",
+    "device": "Dispositivo",
+    "allDevices": "Todos os dispositivos",
+    "allEvents": "Todos os eventos",
+    "from": "Dende",
+    "to": "Ata",
+    "empty": "Aínda non pasou nada.",
+    "noMatch": "Ningún evento coincide con estes filtros.",
+    "by": "por {{name}}",
+    "someone": "un usuario sen nome",
+    "groups": {
+      "door": "Porta",
+      "light": "Luz",
+      "daylight": "Día e noite",
+      "device": "Dispositivo"
+    },
+    "filter": {
+      "door_opening": "Porta abríndose",
+      "door_open": "Porta aberta ou parada",
+      "door_closing": "Porta pechándose",
+      "door_closed": "Porta pechada ou parada",
+      "close_failed": "Peche fallido",
+      "button_ignored": "Pulsación ignorada",
+      "light_on": "Luz acesa",
+      "light_off": "Luz apagada",
+      "night": "Fíxose de noite",
+      "day": "Fíxose de día",
+      "boot": "Arranque",
+      "wifi_up": "Conectado ao WiFi",
+      "wifi_down": "WiFi perdido",
+      "wifi_changed": "Rede WiFi cambiada",
+      "wifi_change_failed": "Cambio de WiFi fallido",
+      "watchdog_reset": "Reinicio polo watchdog",
+      "settings_changed": "Axustes cambiados",
+      "settings_save_failed": "Axustes non gardados",
+      "setup_mode": "Modo configuración"
+    },
+    "events": {
+      "label": "Eventos",
+      "door_opening": "Porta abríndose",
+      "door_open": "Porta aberta",
+      "door_closing": "Porta pechándose",
+      "door_closed": "Porta pechada",
+      "close_failed": "A porta non se pechou tras {{time}}",
+      "button_ignored": "Pulsación do botón ignorada",
+      "light_on_timed": "Luz acesa durante {{time}}",
+      "light_on_untimed": "Luz acesa, sen temporizador",
+      "light_off": "Luz apagada",
+      "night": "Fíxose de noite",
+      "day": "Fíxose de día",
+      "boot": "O dispositivo arrincou",
+      "wifi_up": "Conectado ao WiFi",
+      "wifi_down": "Perdeuse a conexión WiFi",
+      "wifi_changed": "Rede WiFi cambiada",
+      "wifi_change_failed": "Non puido unirse á nova rede WiFi",
+      "watchdog_reset": "Reiniciado polo watchdog",
+      "settings_changed": "Axustes cambiados",
+      "settings_save_failed": "Non se puideron gardar os axustes",
+      "setup_mode": "Entrou en modo configuración"
+    },
+    "sources": {
+      "button": "pulsador ou mando",
+      "api": "aplicación",
+      "sensor": "visto polo sensor",
+      "auto": "automático"
+    },
+    "reasons": {
+      "command": "a porta estaba quieta",
+      "stopped": "a porta parouse",
+      "travel_end": "rematou o tempo de apertura",
+      "no_movement": "a porta non se moveu",
+      "sensor_closed": "confirmouno o sensor de peche",
+      "sensor_released": "a porta deixou o sensor de peche",
+      "came_back": "a porta volveu baixar",
+      "too_soon": "demasiado cedo tras a última pulsación",
+      "startup": "lido ao arrincar"
+    },
+    "pages": {
+      "first": "Primeira páxina",
+      "previous": "Páxina anterior",
+      "next": "Páxina seguinte",
+      "last": "Última páxina",
+      "page": "Páxina {{page}}"
+    },
+    "all": "Ver o historial de todos os dispositivos",
+    "pastTheEnd": "Non hai eventos nesta páxina.",
+    "firstPage": "Ir á primeira páxina"
   }
 }

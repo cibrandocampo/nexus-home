@@ -118,6 +118,9 @@ export function DevicePage() {
         <Title order={1}>{device.name}</Title>
         <OnlineStatus device={device} />
       </Group>
+      <Anchor component={Link} to={`/devices/${device.id}/history`}>
+        {t('device.history')}
+      </Anchor>
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         {covers.map((entity) => (
           <Section key={entity.id} title={t('device.door')}>

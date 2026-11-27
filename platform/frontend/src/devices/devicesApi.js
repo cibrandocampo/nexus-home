@@ -14,8 +14,9 @@ export function useDevices() {
   });
 }
 
-export function useDevice(id) {
+export function useDevice(id, options = {}) {
   return useQuery({
+    ...options,
     queryKey: ['devices', 'detail', String(id)],
     queryFn: () => api(`/devices/${id}`),
     // The page says "Device not found" itself, and stops asking.

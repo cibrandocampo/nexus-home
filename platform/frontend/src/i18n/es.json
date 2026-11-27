@@ -6,7 +6,8 @@
     "home": "Inicio",
     "label": "Principal",
     "profile": "Perfil",
-    "users": "Usuarios"
+    "users": "Usuarios",
+    "history": "Historial"
   },
   "colorScheme": {
     "label": "Tema",
@@ -283,7 +284,8 @@
       "uptime": "Encendido desde hace",
       "lastSeen": "Visto por última vez",
       "ip": "Dirección IP"
-    }
+    },
+    "history": "Ver su historial"
   },
   "entities": {
     "names": {
@@ -305,5 +307,96 @@
     "yes": "Sí",
     "no": "No",
     "unknown": "Desconocido"
+  },
+  "history": {
+    "title": "Historial",
+    "deviceTitle": "Historial de {{name}}",
+    "back": "Volver a {{name}}",
+    "device": "Dispositivo",
+    "allDevices": "Todos los dispositivos",
+    "allEvents": "Todos los eventos",
+    "from": "Desde",
+    "to": "Hasta",
+    "empty": "Todavía no ha pasado nada.",
+    "noMatch": "Ningún evento coincide con estos filtros.",
+    "by": "por {{name}}",
+    "someone": "un usuario sin nombre",
+    "groups": {
+      "door": "Puerta",
+      "light": "Luz",
+      "daylight": "Día y noche",
+      "device": "Dispositivo"
+    },
+    "filter": {
+      "door_opening": "Puerta abriéndose",
+      "door_open": "Puerta abierta o parada",
+      "door_closing": "Puerta cerrándose",
+      "door_closed": "Puerta cerrada o parada",
+      "close_failed": "Cierre fallido",
+      "button_ignored": "Pulsación ignorada",
+      "light_on": "Luz encendida",
+      "light_off": "Luz apagada",
+      "night": "Se hizo de noche",
+      "day": "Se hizo de día",
+      "boot": "Arranque",
+      "wifi_up": "Conectado al WiFi",
+      "wifi_down": "WiFi perdido",
+      "wifi_changed": "Red WiFi cambiada",
+      "wifi_change_failed": "Cambio de WiFi fallido",
+      "watchdog_reset": "Reinicio por el watchdog",
+      "settings_changed": "Ajustes cambiados",
+      "settings_save_failed": "Ajustes no guardados",
+      "setup_mode": "Modo configuración"
+    },
+    "events": {
+      "label": "Eventos",
+      "door_opening": "Puerta abriéndose",
+      "door_open": "Puerta abierta",
+      "door_closing": "Puerta cerrándose",
+      "door_closed": "Puerta cerrada",
+      "close_failed": "La puerta no se cerró tras {{time}}",
+      "button_ignored": "Pulsación del botón ignorada",
+      "light_on_timed": "Luz encendida durante {{time}}",
+      "light_on_untimed": "Luz encendida, sin temporizador",
+      "light_off": "Luz apagada",
+      "night": "Se hizo de noche",
+      "day": "Se hizo de día",
+      "boot": "El dispositivo arrancó",
+      "wifi_up": "Conectado al WiFi",
+      "wifi_down": "Se perdió la conexión WiFi",
+      "wifi_changed": "Red WiFi cambiada",
+      "wifi_change_failed": "No pudo unirse a la nueva red WiFi",
+      "watchdog_reset": "Reiniciado por el watchdog",
+      "settings_changed": "Ajustes cambiados",
+      "settings_save_failed": "No se pudieron guardar los ajustes",
+      "setup_mode": "Entró en modo configuración"
+    },
+    "sources": {
+      "button": "pulsador o mando",
+      "api": "aplicación",
+      "sensor": "visto por el sensor",
+      "auto": "automático"
+    },
+    "reasons": {
+      "command": "la puerta estaba quieta",
+      "stopped": "la puerta se paró",
+      "travel_end": "terminó el tiempo de apertura",
+      "no_movement": "la puerta no se movió",
+      "sensor_closed": "lo confirmó el sensor de cierre",
+      "sensor_released": "la puerta dejó el sensor de cierre",
+      "came_back": "la puerta volvió a bajar",
+      "too_soon": "demasiado pronto tras la última pulsación",
+      "startup": "leído al arrancar"
+    },
+    "pages": {
+      "first": "Primera página",
+      "previous": "Página anterior",
+      "next": "Página siguiente",
+      "last": "Última página",
+      "page": "Página {{page}}"
+    },
+    "all": "Ver el historial de todos los dispositivos",
+    "pastTheEnd": "No hay eventos en esta página.",
+    "firstPage": "Ir a la primera página"
   }
 }

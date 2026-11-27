@@ -1,4 +1,4 @@
-import { House, UserRound, Users } from 'lucide-react';
+import { History, House, UserRound, Users } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, matchPath, useLocation } from 'react-router';
@@ -9,7 +9,14 @@ import classes from './BottomNav.module.css';
 
 // Tabs: `match` are the routes that keep a tab current (its own sub-pages included).
 const TABS = [
-  { to: '/', icon: House, label: 'nav.home', match: ['/', '/devices/*'], min: 'user' },
+  { to: '/', icon: House, label: 'nav.home', match: ['/', '/devices/:id'], min: 'user' },
+  {
+    to: '/history',
+    icon: History,
+    label: 'nav.history',
+    match: ['/history', '/devices/:id/history'],
+    min: 'user',
+  },
   { to: '/profile', icon: UserRound, label: 'nav.profile', match: ['/profile'], min: 'none' },
   { to: '/admin/users', icon: Users, label: 'nav.users', match: ['/admin/users/*'], min: 'admin' },
 ];

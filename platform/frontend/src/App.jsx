@@ -21,6 +21,9 @@ const UsersPage = lazy(() =>
 const DevicePage = lazy(() =>
   import('./pages/DevicePage').then((module) => ({ default: module.DevicePage })),
 );
+const HistoryPage = lazy(() =>
+  import('./pages/HistoryPage').then((module) => ({ default: module.HistoryPage })),
+);
 
 export function AppRoutes() {
   return (
@@ -40,6 +43,8 @@ export function AppRoutes() {
             <Route element={<RequireRole min="user" />}>
               <Route index element={<HomePage />} />
               <Route path="/devices/:id" element={<DevicePage />} />
+              <Route path="/devices/:id/history" element={<HistoryPage />} />
+              <Route path="/history" element={<HistoryPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>
