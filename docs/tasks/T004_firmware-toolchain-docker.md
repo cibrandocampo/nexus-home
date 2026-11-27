@@ -161,3 +161,10 @@ the device folder, so the shipped `dist/garage-2.0.5.bin` was not overwritten.
   the build, would fail faster and more clearly.
 - Dependabot's docker ecosystem tracks version tags and digests. `debian:trixie-slim` is a codename tag
   without a digest, so the new entry will probably open no PRs until the `FROM` is pinned by digest.
+
+## DoD 4–5 on the bench board (2026-11-27, with the 2.0.6 fix)
+
+| # | Check | Result |
+|---|---|---|
+| 4 | `make upload` (bench board on `/dev/ttyACM0`), then `/api/v1/info` | PASS: flashed 114084 bytes; `garage-33ad84` back on 10.1.3.114 with `sw_version` 2.0.6 |
+| 5 | `make update ip=10.1.3.114`, `GARAGE_TOKEN` set, no terminal | PASS: 2.0.6 → 2.0.6-ota (test build) → 2.0.6, then `make smoke` (info, state, 404, 403) |
