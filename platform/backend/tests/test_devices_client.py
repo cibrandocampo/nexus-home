@@ -189,3 +189,22 @@ async def test_proxies_from_the_environment_are_ignored(lan, monkeypatch):
 
     assert seen["trust_env"] is False
     assert seen["follow_redirects"] is False
+
+
+@pytest.mark.parametrize("bad", ["\\u0000", "\\ud800"])
+async def test_answers_the_database_could_not_hold_are_bad_answers(lan, bad):
+    body = '{"rev": 1, "wifi": {"ip": "10.1.3.50' + bad + '"}}'
+    lan.add(HOST).raw["state"] = httpx.Response(200, content=body.encode())
+
+    with pytest.raises(DeviceError) as caught:
+        await DeviceClient(HOST).state()
+
+    assert caught.value.code == "device_bad_answer"
+
+
+def test_storable_walks_keys_lists_and_values():
+    from app.devices.client import storable
+
+    assert storable({"a": [1, "ñ", {"b": None}], "c": True})
+    assert not storable({"a\x00": 1})
+    assert not storable({"a": ["\ud800"]})

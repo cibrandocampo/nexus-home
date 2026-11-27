@@ -3,17 +3,19 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import AwareDatetime, StringConstraints
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import RequireAdmin, RequireUser
 from app.core import ratelimit
 from app.core.db import get_session
-from app.core.types import NO_NUL, IdPath
-from app.devices import poller, scan, service
+from app.core.types import MAX_DB_INT, NO_NUL, IdPath
+from app.devices import events, poller, scan, service
 from app.devices.schemas import (
     DeviceCreate,
     DeviceOut,
     DevicePage,
+    EventPage,
     ScanOut,
     ScanRanges,
     ScanRequest,
@@ -70,3 +72,51 @@ async def get_device(device_pk: IdPath, user: RequireUser, db: Db) -> DeviceOut:
 async def delete_device(device_pk: IdPath, admin: RequireAdmin, db: Db) -> None:
     await service.delete_device(db, device_pk)
     poller.notify()
+
+
+EventNames = Annotated[
+    list[Annotated[str, StringConstraints(max_length=32, pattern=r"^[a-z_]+$")]] | None,
+    Query(alias="event", max_length=32),
+]
+Since = Annotated[AwareDatetime | None, Query(alias="from")]
+Until = Annotated[AwareDatetime | None, Query(alias="to")]
+Page = Annotated[int, Query(ge=1, le=100_000)]
+Size = Annotated[int, Query(ge=1, le=100)]
+
+
+@router.get("/{device_pk}/events")
+async def device_events(
+    device_pk: IdPath,
+    user: RequireUser,
+    db: Db,
+    event: EventNames = None,
+    since: Since = None,
+    until: Until = None,
+    page: Page = 1,
+    size: Size = 50,
+) -> EventPage:
+    await service.get_device(db, device_pk)  # 404 for an unknown device
+    items, total = await events.list_events(
+        db, device_pk=device_pk, events=event, since=since, until=until, page=page, size=size
+    )
+    return EventPage(items=items, total=total, page=page, size=size)
+
+
+events_router = APIRouter(prefix="/events", tags=["devices"])
+
+
+@events_router.get("")
+async def all_events(
+    user: RequireUser,
+    db: Db,
+    device: Annotated[int | None, Query(ge=1, le=MAX_DB_INT)] = None,
+    event: EventNames = None,
+    since: Since = None,
+    until: Until = None,
+    page: Page = 1,
+    size: Size = 50,
+) -> EventPage:
+    items, total = await events.list_events(
+        db, device_pk=device, events=event, since=since, until=until, page=page, size=size
+    )
+    return EventPage(items=items, total=total, page=page, size=size)

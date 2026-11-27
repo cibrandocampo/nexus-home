@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,3 +40,39 @@ class Device(Base):
     @property
     def has_token(self) -> bool:
         return self.token_encrypted is not None
+
+
+class DeviceBoot(Base):
+    """One run of a board between two restarts: its log times (`t`) count from `started_at`."""
+
+    __tablename__ = "device_boots"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_pk: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), index=True)
+    # Estimated as read time - uptime; refreshed on every read (the board's clock drifts a little).
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_uptime_s: Mapped[int]
+    last_read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class DeviceEvent(Base):
+    """An entry of a board's event log, stored once with its absolute time."""
+
+    __tablename__ = "device_events"
+    __table_args__ = (Index("ix_device_events_device_pk_at", "device_pk", "at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_pk: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    boot_id: Mapped[int] = mapped_column(
+        ForeignKey("device_boots.id", ondelete="CASCADE"), index=True
+    )
+    t: Mapped[int]  # seconds since the boot, as the board logged it
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event: Mapped[str] = mapped_column(String(32))
+    source: Mapped[str] = mapped_column(String(16))
+    reason: Mapped[str] = mapped_column(String(32))
+    value: Mapped[int] = mapped_column(BigInteger)
+    # The user whose platform command caused it (T010); null for the button, the sensor, …
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )

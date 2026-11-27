@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     poll_interval_s: float = Field(default=2.0, ge=0.5, le=60)
     poll_offline_after: int = Field(default=3, ge=1, le=100)
     poll_offline_interval_s: float = Field(default=5.0, ge=0.5, le=600)
+    # History: days events are kept, and how often each online device's log is read at least
+    event_retention_days: int = Field(default=365, ge=1, le=3650)
+    log_read_every_s: float = Field(default=60.0, ge=5, le=3600)
 
 
 DEFAULT_SECRET_KEY = Settings.model_fields["secret_key"].default

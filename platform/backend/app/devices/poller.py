@@ -17,6 +17,7 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.errors import AppError
+from app.core.types import MAX_DB_INT
 from app.devices.bus import Rebooted, StateChanged, WentOffline, WentOnline, bus
 from app.devices.client import DeviceError
 from app.devices.models import Device
@@ -38,7 +39,7 @@ def apply_state(
     then says nothing)."""
     device.last_seen_at = now
     uptime = state.get("uptime_s")
-    device.uptime_s = uptime if isinstance(uptime, int) else None
+    device.uptime_s = uptime if isinstance(uptime, int) and 0 <= uptime <= MAX_DB_INT else None
     if state["rev"] == device.rev and not force:
         return False
     device.state = state

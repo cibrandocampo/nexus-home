@@ -60,6 +60,7 @@ class DeviceClient:
         body: dict | None = None,
         params: dict | None = None,
         auth: bool = False,
+        whole: bool = True,
     ) -> dict[str, Any]:
         headers = {"Connection": "close"}
         if auth and self.token:
@@ -87,7 +88,7 @@ class DeviceClient:
                 )
             except httpx.HTTPError:
                 raise DeviceError(None, "device_unreachable", "The device did not answer") from None
-        return _answer(response)
+        return _answer(response, whole)
 
     async def info(self) -> dict[str, Any]:
         return await self.request("GET", "info")
@@ -96,7 +97,8 @@ class DeviceClient:
         return await self.request("GET", "state")
 
     async def log(self) -> dict[str, Any]:
-        return await self.request("GET", "log")
+        # Checked entry by entry (history.parse_log): one bad entry must not hide the others.
+        return await self.request("GET", "log", whole=False)
 
     async def settings(self) -> dict[str, Any]:
         return await self.request("GET", "settings", auth=True)
@@ -107,14 +109,34 @@ class DeviceClient:
         return await self.request("POST", path, body=body, params=params, auth=True)
 
 
-def _answer(response: httpx.Response) -> dict[str, Any]:
+def storable(value: Any) -> bool:
+    """Whether every string in a JSON value can go into PostgreSQL text and JSONB: no NUL, no lone
+    surrogate (`\\u0000` and `\\ud800` decode fine in Python and fail in the database)."""
+    if isinstance(value, str):
+        if "\x00" in value:
+            return False
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:  # a lone surrogate
+            return False
+        return True
+    if isinstance(value, dict):
+        return all(storable(k) and storable(v) for k, v in value.items())
+    if isinstance(value, list):
+        return all(storable(v) for v in value)
+    return True
+
+
+def _answer(response: httpx.Response, whole: bool) -> dict[str, Any]:
     try:
         data = response.json()
     except ValueError:
         data = None
     if response.is_success:
-        if not isinstance(data, dict):
-            raise DeviceError(response.status_code, "device_bad_answer", "Not a JSON object")
+        if not isinstance(data, dict) or (whole and not storable(data)):
+            raise DeviceError(
+                response.status_code, "device_bad_answer", "Not a storable JSON object"
+            )
         return data
     error = data.get("error") if isinstance(data, dict) else None
     if isinstance(error, dict) and isinstance(error.get("code"), str):

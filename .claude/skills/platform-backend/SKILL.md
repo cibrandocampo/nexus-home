@@ -73,7 +73,8 @@ Two loops, both started in the lifespan:
 
 - `core/scheduler.py`: the hourly clean-up. Periodic tasks there must be idempotent, short, and skip
   locked rows.
-- `devices/poller.py`: device polling (user decision 2026-11-27, the one exception). A supervisor keeps
+- `devices/poller.py` and `devices/history.py`: device polling and log collection (user decision
+  2026-11-27, the one exception; the collector subscribes to the bus before the poller starts). A supervisor keeps
   one task per registered device (`notify()` after an add or remove, a resync every 30 s); each task
   reads `GET /state` through the device client (per-host lock), saves on a new `rev`, tracks
   online/offline and restarts, and publishes on `devices/bus.py` (in-process; slow subscribers lose

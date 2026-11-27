@@ -95,3 +95,27 @@ class ScanOut(BaseModel):
 
 class ScanRanges(BaseModel):
     ranges: list[str]
+
+
+class Ref(BaseModel):
+    id: int
+    name: str | None
+
+
+class EventOut(BaseModel):
+    id: int
+    at: datetime
+    event: str
+    source: str
+    reason: str
+    value: int
+    device: Ref
+    # Who sent the platform command that caused it; null for the button, the sensor, the board…
+    user: Ref | None
+
+
+class EventPage(BaseModel):
+    items: list[EventOut]
+    total: int
+    page: int
+    size: int

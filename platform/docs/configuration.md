@@ -108,6 +108,8 @@ in `$DATA_PATH/postgres`.
 | `POLL_INTERVAL_S` | `2` | Seconds between two `GET /state` reads of each device (0.5 to 60). The device page shows changes within about this time. |
 | `POLL_OFFLINE_AFTER` | `3` | Failed reads in a row before a device counts as offline. A failed read is retried after 0.5 s, so with `DEVICE_TIMEOUT_S` 3 a silent board is offline after about 12 s. |
 | `POLL_OFFLINE_INTERVAL_S` | `5` | Seconds between reads of an offline device; it is back online on the first answer. |
+| `EVENT_RETENTION_DAYS` | `365` | Days the event history is kept; the hourly clean-up deletes older events. |
+| `LOG_READ_EVERY_S` | `60` | Each online device's event log is read on every change it reports and at least this often. A board keeps only its last 64 events: more than that between two reads (a burst of commands) loses the oldest, and the platform logs a warning. |
 
 ### Device simulators (development only)
 
