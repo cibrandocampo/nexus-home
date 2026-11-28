@@ -133,6 +133,16 @@ theme and time zone, Docker, end-to-end tests and CI.
   refused while the door moves (the device answers 409). Each update is recorded (who, from, to,
   result, duration).
 - `tools/update.sh` stays for the bench and for when the platform is down.
+- **Test versions (2026-11-28)**: GitHub pre-releases (`garage-v2.1.0-rc1`) and uploaded files are
+  shown to admins apart, marked "test", installable on purpose; they never count as the latest version
+  (neither for the "update available" notice nor for Home Assistant).
+- **Downgrades (2026-11-28)**: an admin may install any available version; an older one than the
+  installed is allowed after a warning in the confirmation (the board has no rollback of its own).
+- **Home Assistant (2026-11-28, user rule: every design must map onto HA)**: each device's firmware is
+  shaped like HA's `update` entity: `installed_version` (the board's `sw_version`), `latest_version`
+  (newest stable release for its type), `release_summary` and `release_url`, `in_progress`, and
+  "install" with an optional version. The API answers that shape per device, and update progress and
+  results go through the event bus, so an HA adapter maps them 1:1 later.
 
 ### Permissions
 
