@@ -371,6 +371,21 @@ With the Arduino IDE, open `firmware/firmware.ino` and select the board "Arduino
 No extra libraries are needed. Pins and default timings are in `firmware/config.h`.
 A newly flashed board needs the first setup (see above); a board already set up keeps its settings.
 
+## Releases
+
+The platform installs this firmware from the repository's GitHub Releases. To publish one:
+
+1. Bump `FW_VERSION` in `firmware/config.h` (the commit subject ends with the version, `(2.0.7)`), merge
+   it to `main`.
+2. Tag that commit and push the tag: `git tag garage-v2.0.7 <commit> && git push origin garage-v2.0.7`.
+3. The `Garage release` workflow (`.github/workflows/garage-release.yml`) checks the tag matches
+   `FW_VERSION`, runs the host tests, builds, and publishes the release with `garage-<version>.ota`,
+   `garage-<version>.bin` and `SHA256SUMS`.
+
+A version with a suffix (`2.1.0-rc1`) is published as a pre-release: the platform offers it to admins
+as a test version, never as the latest one. Try every release on the bench board first: the board has no
+rollback.
+
 ## Firmware update over the network
 
 No cable needed: from a computer on the same network,

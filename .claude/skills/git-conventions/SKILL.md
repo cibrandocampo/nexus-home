@@ -31,6 +31,9 @@ Co-Authored-By / session lines as given by the current attribution instructions
 - **scope**: the area — `garage`, `sound`, `platform`, `ha` (Home Assistant integration),
   `ci`, `claude`… Omit it only for repo-wide changes.
 - **subject**: imperative, lowercase, no final period. Firmware releases end with the version: `(2.0.5)`.
+- **Firmware tags**: a garage release is the tag `garage-v<version>` on the main commit that bumped
+  `FW_VERSION` (`git tag garage-v2.0.7 <commit> && git push origin garage-v2.0.7`); the workflow
+  publishes it. Platform releases are `platform-v<version>`. Pushing a tag publishes: ask the user first.
 - **body**: explains behaviour and reasons, not file lists. Mention what was checked on real hardware.
 - English only. Author = the local `git config`; never set another identity.
 - One commit per task in a plan. Don't mix unrelated changes in one commit.

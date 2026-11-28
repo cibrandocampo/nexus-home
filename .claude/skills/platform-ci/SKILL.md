@@ -69,6 +69,15 @@ Pushes only when **all** hold: secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN
   until eslint-plugin-jsx-a11y supports them. Bump the Playwright image in `e2e/Dockerfile` together with
   `@playwright/test`.
 
+- `garage-release.yml` (tags `garage-v*`): checks the tag equals `FW_VERSION`, runs the garage host
+  tests and build in the toolchain image, makes the `.ota` and `SHA256SUMS`, and publishes a GitHub
+  Release with the three files. Two jobs: `build` (read-only token, no credentials left in the checkout;
+  every event) and `publish` (only for a pushed tag, `contents: write`, runs nothing from the branch:
+  the artifact, the sums again, `gh release create`). The tag must be on a `main` commit; a version with
+  a suffix is a `--prerelease`; every release is `--latest=false` (the platform's releases stay the
+  repository's latest); notes start at the previous stable garage release. A pull request changing the
+  workflow, or a manual run with a version, only builds (artifact). The platform installs firmware from these releases.
+
 ## Changing workflows
 
 - Validate with actionlint (Docker), from the repository root:

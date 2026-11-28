@@ -1,0 +1,141 @@
+name: Garage release
+
+# Firmware releases of the garage controller (devices/garage-iot-controller), installed by the
+# platform from this repository's GitHub Releases.
+#
+# - Push a tag `garage-v<version>` (on a main commit whose firmware/config.h FW_VERSION is <version>):
+#   host tests, build, .ota, SHA256SUMS, and a GitHub Release with the three files. A version with a
+#   suffix (2.1.0-rc1) is a pre-release: the platform offers it to admins as a test version only.
+# - Run it by hand (workflow_dispatch, version required) or change this file in a pull request to build
+#   the same files without publishing anything: they are kept as a workflow artifact.
+
+on:
+  push:
+    tags: ["garage-v*"]
+  pull_request:
+    paths: [.github/workflows/garage-release.yml]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (must equal FW_VERSION in firmware/config.h)
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: garage-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Runs the branch's Makefile and scripts: read-only token, not left in .git/config.
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: devices/garage-iot-controller
+    env:
+      # Tag push: the tag; manual run: the input; pull request: the firmware's own version.
+      VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version || '' }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags and main, for the checks below
+          persist-credentials: false
+
+      - name: Version
+        id: version
+        run: |
+          firmware=$(sed -n 's/^#define FW_VERSION "\(.*\)"/\1/p' firmware/config.h)
+          if [ -z "$firmware" ]; then
+            echo "::error::no FW_VERSION found in firmware/config.h"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$VERSION" = garage-v ]; then
+            echo "::error::the tag has no version: garage-v<version>"
+            exit 1
+          fi
+          VERSION="${VERSION#garage-v}"
+          VERSION="${VERSION:-$firmware}"
+          if [ "$VERSION" != "$firmware" ]; then
+            echo "::error::version $VERSION does not match FW_VERSION $firmware in firmware/config.h"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::release tags go on a commit of main"
+            exit 1
+          fi
+          case "$VERSION" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          { echo "version=$VERSION"; echo "prerelease=$prerelease"; } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Toolchain image
+        uses: docker/build-push-action@v7
+        with:
+          context: devices/garage-iot-controller/docker
+          tags: nexus-garage-toolchain
+          load: true
+          cache-from: type=gha,scope=garage-toolchain
+          cache-to: type=gha,mode=max,scope=garage-toolchain
+
+      - name: Host tests, build and .ota
+        run: |
+          make build IMAGE_BUILT=1
+          make ota IMAGE_BUILT=1 version="$VERSION"
+          cd dist
+          sha256sum "garage-$VERSION.ota" "garage-$VERSION.bin" > SHA256SUMS
+          sha256sum --check SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Keep the files
+        uses: actions/upload-artifact@v7
+        with:
+          name: garage-${{ env.VERSION }}
+          path: |
+            devices/garage-iot-controller/dist/garage-${{ env.VERSION }}.ota
+            devices/garage-iot-controller/dist/garage-${{ env.VERSION }}.bin
+            devices/garage-iot-controller/dist/SHA256SUMS
+          retention-days: 7
+
+  # Only for a pushed tag: publishes what the build job made, running nothing from the branch.
+  publish:
+    name: Publish the release
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # gh release create
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      PRERELEASE: ${{ needs.build.outputs.prerelease }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: garage-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Check the files
+        run: cd dist && sha256sum --check SHA256SUMS
+
+      - name: Create the release
+        run: |
+          tag="garage-v$VERSION"
+          # Notes from the commits since the previous stable garage release (not a platform one, not
+          # a release candidate), read from the API: no checkout here.
+          previous=$(gh release list --exclude-pre-releases --limit 100 --json tagName \
+            --jq "[.[].tagName | select(startswith(\"garage-v\") and . != \"$tag\")][0] // \"\"")
+          set -- --title "Garage $VERSION" --generate-notes --verify-tag --latest=false
+          if [ -n "$previous" ]; then set -- "$@" --notes-start-tag "$previous"; fi
+          if [ "$PRERELEASE" = "true" ]; then set -- "$@" --prerelease; fi
+          gh release create "$tag" "$@" \
+            "dist/garage-$VERSION.ota" "dist/garage-$VERSION.bin" dist/SHA256SUMS
