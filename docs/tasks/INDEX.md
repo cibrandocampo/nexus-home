@@ -44,8 +44,8 @@ Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Br
 
 | ID | Title | Depends on | Status | QA |
 |----|-------|------------|--------|----|
-| T016 | Firmware release workflow | — | Pending | — |
-| T017 | `.bin` → `.ota` converter in the platform | — | Pending | — |
+| T016 | Firmware release workflow | — | Completed (DoD 2 after push; DoD 4: user) | — |
+| T017 | `.bin` → `.ota` converter in the platform | — | Completed | Approved |
 | T018 | Firmware catalogue: GitHub sync and uploads | T017 | Pending | — |
 | T019 | Simulator: firmware updates | — | Pending | — |
 | T020 | Firmware updates from the platform | T018, T019 | Pending | — |
