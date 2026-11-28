@@ -1,8 +1,10 @@
 """Application settings, read from the environment (see docs/configuration.md)."""
 
+import base64
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -61,8 +63,26 @@ class Settings(BaseSettings):
     admin_email: str | None = None
     admin_password: str | None = None
 
+    # Devices
+    # Fernet key for the device tokens at rest (url-safe base64 of 32 bytes). Production refuses
+    # this development default; losing the key means re-entering every device token.
+    device_token_key: str = "w8okSphRDml6-rycgRvw2UAF5b4bdrWFKXFg4HpCNl8="  # noqa: S105 - dev key
+    device_timeout_s: float = 3.0  # per request to a board
+    # Discovery: comma-separated IPv4 CIDRs (at most 1024 addresses in all), probes at once, timeout
+    scan_ranges: str = "10.1.2.0/23"
+    scan_concurrency: int = Field(default=64, ge=1, le=256)
+    scan_timeout_s: float = Field(default=1.5, gt=0, le=10)
+    # Polling: GET /state this often; offline after this many failed polls, then polled more slowly
+    poll_interval_s: float = Field(default=2.0, ge=0.5, le=60)
+    poll_offline_after: int = Field(default=3, ge=1, le=100)
+    poll_offline_interval_s: float = Field(default=5.0, ge=0.5, le=600)
+    # History: days events are kept, and how often each online device's log is read at least
+    event_retention_days: int = Field(default=365, ge=1, le=3650)
+    log_read_every_s: float = Field(default=60.0, ge=5, le=3600)
+
 
 DEFAULT_SECRET_KEY = Settings.model_fields["secret_key"].default
+DEFAULT_DEVICE_TOKEN_KEY = Settings.model_fields["device_token_key"].default
 MIN_SECRET_BYTES = 32
 
 
@@ -75,7 +95,18 @@ def production_problems(settings: Settings) -> list[str]:
         problems.append("SECRET_KEY is the default placeholder")
     elif len(settings.secret_key.encode()) < MIN_SECRET_BYTES:
         problems.append(f"SECRET_KEY is shorter than {MIN_SECRET_BYTES} bytes")
+    if settings.device_token_key == DEFAULT_DEVICE_TOKEN_KEY:
+        problems.append("DEVICE_TOKEN_KEY is the development key")
+    elif not _valid_fernet_key(settings.device_token_key):
+        problems.append("DEVICE_TOKEN_KEY is not a Fernet key (url-safe base64 of 32 bytes)")
     return problems
+
+
+def _valid_fernet_key(key: str) -> bool:
+    try:
+        return len(base64.urlsafe_b64decode(key.encode())) == 32 and len(key) == 44
+    except ValueError:
+        return False
 
 
 def ensure_production_ready(settings: Settings) -> None:
@@ -84,7 +115,9 @@ def ensure_production_ready(settings: Settings) -> None:
         raise RuntimeError(
             "Refusing to start in production: "
             + "; ".join(problems)
-            + ". Set a long random SECRET_KEY (for example: openssl rand -hex 32)."
+            + ". Set a long random SECRET_KEY (for example: openssl rand -hex 32) and a new"
+            + " DEVICE_TOKEN_KEY (openssl rand -base64 32 | tr '+/' '-_');"
+            + " see docs/configuration.md."
         )
 
 

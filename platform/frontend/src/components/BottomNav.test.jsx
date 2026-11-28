@@ -83,7 +83,7 @@ describe('BottomNav', () => {
     server.use(withSession());
     renderWithProviders(<AppRoutes />);
 
-    const content = (await screen.findByRole('heading', { name: 'Welcome' })).closest('main > *');
+    const content = (await screen.findByRole('heading', { name: 'Home' })).closest('main > *');
     expect(content.className).toMatch(/content/);
     expect(content.style.paddingBottom).toBe('');
     expect(content.style.paddingBlock).toBe('');

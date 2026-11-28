@@ -15,7 +15,12 @@ export function notifyError(error) {
 
 export function createQueryClient() {
   return new QueryClient({
-    queryCache: new QueryCache({ onError: notifyError }),
+    // A query whose page explains its own errors says so with `meta: { handlesErrors: true }`.
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        if (!query.meta?.handlesErrors) notifyError(error);
+      },
+    }),
     mutationCache: new MutationCache({
       onError: (error, _vars, _ctx, mutation) => {
         if (!mutation.options.onError) notifyError(error);

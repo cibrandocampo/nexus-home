@@ -11,6 +11,7 @@ from app.core.headers import CONTENT_SECURITY_POLICY
 from app.main import create_app
 
 STRONG = "x" * 32
+GOOD_KEY = "tvvrxZOGUWmbvodmRntVIw1lQGK5i34S3nmOK2zrv6U="
 
 
 @pytest.mark.parametrize(
@@ -27,7 +28,8 @@ def test_production_refuses_a_weak_secret(secret, problem):
 
 def test_secret_length_is_counted_in_bytes():
     # 11 characters of 3 bytes each: 33 bytes.
-    assert production_problems(Settings(env="production", secret_key="€" * 11)) == []
+    settings = Settings(env="production", secret_key="€" * 11, device_token_key=GOOD_KEY)
+    assert production_problems(settings) == []
 
 
 def test_other_environments_accept_the_default_secret():
@@ -69,6 +71,7 @@ def test_preflight_passes_outside_production():
 def test_production_hides_the_interactive_docs(monkeypatch):
     monkeypatch.setenv("ENV", "production")
     monkeypatch.setenv("SECRET_KEY", STRONG)
+    monkeypatch.setenv("DEVICE_TOKEN_KEY", GOOD_KEY)
     from app.core.config import get_settings
 
     get_settings.cache_clear()
@@ -314,3 +317,26 @@ async def test_a_build_without_assets_still_serves_pages(tmp_path, monkeypatch):
         response = await client.get("/profile")
 
     assert "<title>SPA</title>" in response.text
+
+
+def test_production_refuses_the_development_device_key():
+    problems = production_problems(Settings(env="production", secret_key=STRONG))
+
+    assert problems == ["DEVICE_TOKEN_KEY is the development key"]
+    with pytest.raises(RuntimeError, match="DEVICE_TOKEN_KEY"):
+        ensure_production_ready(Settings(env="production", secret_key=STRONG))
+
+
+@pytest.mark.parametrize("key", ["", "not-base64!", "c2hvcnQ=", GOOD_KEY.rstrip("=")])
+def test_production_refuses_a_malformed_device_key(key):
+    problems = production_problems(
+        Settings(env="production", secret_key=STRONG, device_token_key=key)
+    )
+
+    assert problems == ["DEVICE_TOKEN_KEY is not a Fernet key (url-safe base64 of 32 bytes)"]
+
+
+def test_production_accepts_a_new_device_key():
+    settings = Settings(env="production", secret_key=STRONG, device_token_key=GOOD_KEY)
+
+    assert production_problems(settings) == []

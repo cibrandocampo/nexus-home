@@ -52,7 +52,21 @@ LOGIN_EMAIL = RateLimit("login_email", 3, 3600)  # emails sent to one address
 LOGIN_VERIFY_IP = RateLimit("login_verify_ip", 10, 60)
 REFRESH_IP = RateLimit("refresh_ip", 30, 60)
 CHANGE_PASSWORD_USER = RateLimit("change_password_user", 5, 3600)
-ALL = (LOGIN_START_IP, LOGIN_EMAIL, LOGIN_VERIFY_IP, REFRESH_IP, CHANGE_PASSWORD_USER)
+DEVICE_ADD_USER = RateLimit("device_add_user", 20, 3600)  # each one checks a token on a board
+SCAN_USER = RateLimit("scan_user", 30, 3600)  # each one probes up to 1024 addresses
+COMMAND_USER = RateLimit("command_user", 30, 60)  # a door or light command reaches a board
+DEVICE_TOKEN_USER = RateLimit("device_token_user", 20, 3600)  # rotate, reveal or re-enter a token
+ALL = (
+    LOGIN_START_IP,
+    LOGIN_EMAIL,
+    LOGIN_VERIFY_IP,
+    REFRESH_IP,
+    CHANGE_PASSWORD_USER,
+    DEVICE_ADD_USER,
+    SCAN_USER,
+    COMMAND_USER,
+    DEVICE_TOKEN_USER,
+)
 
 
 @lru_cache

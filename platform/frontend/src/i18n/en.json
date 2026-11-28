@@ -6,7 +6,9 @@
     "home": "Home",
     "label": "Main",
     "profile": "Profile",
-    "users": "Users"
+    "users": "Users",
+    "history": "History",
+    "devices": "Devices"
   },
   "colorScheme": {
     "label": "Colour scheme",
@@ -15,8 +17,9 @@
     "auto": "System"
   },
   "home": {
-    "title": "Welcome",
-    "text": "Start building your project from here."
+    "title": "Home",
+    "empty": "No devices yet.",
+    "addDevice": "Add a device"
   },
   "notFound": {
     "title": "Page not found",
@@ -26,7 +29,36 @@
   "errors": {
     "title": "Something went wrong",
     "generic": "Unexpected error. Please try again.",
-    "rate_limited": "Too many attempts. Please wait a moment and try again."
+    "rate_limited": "Too many attempts. Please wait a moment and try again.",
+    "door_busy": "The door is moving or was just triggered. Try again in a moment.",
+    "device_offline": "The device is offline. Check that it is powered and on the network.",
+    "device_unreachable": "The device did not answer. Try again in a moment.",
+    "device_error": "The device answered with an error. Try again in a moment.",
+    "device_token_invalid": "The device refused the stored access token. An administrator must enter it again.",
+    "device_token_unreadable": "The stored access token cannot be read. An administrator must enter it again.",
+    "invalid_duration": "That light time is not valid.",
+    "entity_not_found": "The device does not have this function.",
+    "command_not_found": "The device does not accept this action.",
+    "device_not_found": "The device no longer exists.",
+    "invalid_params": "This action takes no options.",
+    "device_exists": "This device is already added.",
+    "device_token_required": "This device has an access token: enter it to add the device.",
+    "not_a_device": "There is no nexusHome device at this address.",
+    "invalid_scan_ranges": "The network ranges in the settings are not valid. Check SCAN_RANGES.",
+    "scan_in_progress": "A scan is already running. Wait for it to finish.",
+    "scan_too_large": "These ranges hold more than 1024 addresses. Scan a smaller range.",
+    "device_has_no_token": "This device has no stored access token.",
+    "device_mismatch": "Another device answers at that address.",
+    "device_save_failed": "The device could not store its settings. Try again.",
+    "device_token_unchanged": "The device answered but kept its old access token.",
+    "device_token_unconfirmed": "The device did not confirm the new access token. Both tokens are kept: check the device.",
+    "settings_not_supported": "This kind of device has no settings here.",
+    "invalid_name": "The device refused this name.",
+    "invalid_open_time": "The device refused this opening time (5 to 100 s).",
+    "invalid_close_time": "The device refused this closing time (10 to 100 s).",
+    "invalid_light_time": "The device refused this light time (10 to 600 s).",
+    "invalid_night_level": "The device refused this night level (1 to 1023).",
+    "invalid_display": "The device refused this display setting."
   },
   "language": {
     "label": "Language"
@@ -176,6 +208,289 @@
       "validation_error": "Check the fields and try again.",
       "forbidden": "You no longer have permission for this.",
       "generic": "Something went wrong. Please try again."
+    }
+  },
+  "devices": {
+    "online": "Online",
+    "offline": "Offline",
+    "offlineSince": "Offline, last seen {{time}}",
+    "details": "See the device"
+  },
+  "door": {
+    "states": {
+      "open": "Open",
+      "closed": "Closed",
+      "opening": "Opening",
+      "closing": "Closing",
+      "stopped": "Stopped part way",
+      "unknown": "Unknown"
+    },
+    "since": "For {{time}}, moved by {{source}}",
+    "since_nobody": "For {{time}}",
+    "sources": {
+      "button": "the button",
+      "remote": "the remote",
+      "api": "the app",
+      "sensor": "hand (seen by the sensor)",
+      "auto": "the board"
+    },
+    "closeFailed": "The door did not close. Check that nothing is in the way.",
+    "commands": {
+      "open": "Open",
+      "close": "Close",
+      "stop": "Stop"
+    },
+    "confirm": {
+      "text": "The door is the house entrance.",
+      "open": {
+        "title": "Open the door of {{name}}?",
+        "action": "Open the door"
+      },
+      "close": {
+        "title": "Close the door of {{name}}?",
+        "action": "Close the door"
+      },
+      "stop": {
+        "title": "Stop the door of {{name}}?",
+        "action": "Stop the door"
+      }
+    }
+  },
+  "light": {
+    "on": "Light on",
+    "off": "Light off",
+    "onFor": "Light on, {{time}} left",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "duration": "Keep the light on",
+    "durations": {
+      "0": "Until turned off",
+      "600": "10 minutes",
+      "3600": "1 hour",
+      "default": "Usual time"
+    }
+  },
+  "device": {
+    "door": "Door",
+    "light": "Light",
+    "sensors": "Sensors",
+    "about": "Device",
+    "notFound": "Device not found",
+    "fields": {
+      "model": "Model",
+      "firmware": "Firmware",
+      "modem": "WiFi module",
+      "address": "Address",
+      "id": "Device id",
+      "uptime": "Running for",
+      "lastSeen": "Last seen",
+      "ip": "IP address"
+    },
+    "history": "See its history"
+  },
+  "entities": {
+    "names": {
+      "door_problem": "Door problem",
+      "night": "Night",
+      "light_level": "Light level",
+      "rssi": "WiFi signal"
+    },
+    "values": {
+      "door_problem": {
+        "true": "The door did not close",
+        "false": "None"
+      },
+      "night": {
+        "true": "Night",
+        "false": "Day"
+      }
+    },
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown"
+  },
+  "history": {
+    "title": "History",
+    "deviceTitle": "History of {{name}}",
+    "back": "Back to {{name}}",
+    "device": "Device",
+    "allDevices": "All devices",
+    "allEvents": "All events",
+    "from": "From",
+    "to": "To",
+    "empty": "Nothing has happened yet.",
+    "noMatch": "No events match these filters.",
+    "by": "by {{name}}",
+    "someone": "a user without a name",
+    "groups": {
+      "door": "Door",
+      "light": "Light",
+      "daylight": "Day and night",
+      "device": "Device"
+    },
+    "filter": {
+      "door_opening": "Door opening",
+      "door_open": "Door open or stopped",
+      "door_closing": "Door closing",
+      "door_closed": "Door closed or stopped",
+      "close_failed": "Close failed",
+      "button_ignored": "Button press ignored",
+      "light_on": "Light on",
+      "light_off": "Light off",
+      "night": "Night came",
+      "day": "Day came",
+      "boot": "Started",
+      "wifi_up": "Connected to WiFi",
+      "wifi_down": "WiFi lost",
+      "wifi_changed": "WiFi network changed",
+      "wifi_change_failed": "WiFi change failed",
+      "watchdog_reset": "Restarted by the watchdog",
+      "settings_changed": "Settings changed",
+      "settings_save_failed": "Settings not saved",
+      "setup_mode": "Setup mode"
+    },
+    "events": {
+      "label": "Events",
+      "door_opening": "Door opening",
+      "door_open": "Door open",
+      "door_closing": "Door closing",
+      "door_closed": "Door closed",
+      "close_failed": "The door did not close after {{time}}",
+      "button_ignored": "Button press ignored",
+      "light_on_timed": "Light on for {{time}}",
+      "light_on_untimed": "Light on, no timer",
+      "light_off": "Light off",
+      "night": "Night came",
+      "day": "Day came",
+      "boot": "Device started",
+      "wifi_up": "Connected to WiFi",
+      "wifi_down": "WiFi connection lost",
+      "wifi_changed": "WiFi network changed",
+      "wifi_change_failed": "Could not join the new WiFi network",
+      "watchdog_reset": "Restarted by the watchdog",
+      "settings_changed": "Settings changed",
+      "settings_save_failed": "Settings could not be saved",
+      "setup_mode": "Setup mode started"
+    },
+    "sources": {
+      "button": "button or remote",
+      "api": "app",
+      "sensor": "seen by the sensor",
+      "auto": "automatic"
+    },
+    "reasons": {
+      "command": "the door was still",
+      "stopped": "the door was stopped",
+      "travel_end": "the opening time ended",
+      "no_movement": "the door did not move",
+      "sensor_closed": "the closed sensor confirmed it",
+      "sensor_released": "the door left the closed sensor",
+      "came_back": "the door came back down",
+      "too_soon": "too soon after the last press",
+      "startup": "read at start-up"
+    },
+    "pages": {
+      "first": "First page",
+      "previous": "Previous page",
+      "next": "Next page",
+      "last": "Last page",
+      "page": "Page {{page}}"
+    },
+    "all": "See the history of every device",
+    "pastTheEnd": "There are no events on this page.",
+    "firstPage": "Go to the first page"
+  },
+  "adminDevices": {
+    "title": "Devices",
+    "none": "No devices yet. Scan the network below, or add one by its address.",
+    "device": "Device",
+    "status": "Status",
+    "actions": "Actions",
+    "actionsFor": "Actions for {{name}}",
+    "settings": "Settings",
+    "where": "{{id}} at {{host}}, firmware {{version}}",
+    "added": "{{name}} added.",
+    "removed": "{{name}} removed.",
+    "back": "Back to devices",
+    "open": "Open the device page",
+    "settingsTitle": "Settings of {{name}}",
+    "stored": "Stored on the device",
+    "board": "Device",
+    "add": {
+      "byAddress": "Add by address",
+      "title": "Add a device",
+      "host": "Address",
+      "hostHelp": "IP address or host name of the device on your network.",
+      "token": "Access token",
+      "tokenHelp": "Leave it empty for a new device without one: the platform sets a new token on it.",
+      "submit": "Add device",
+      "short": "Add",
+      "tokenInvalid": "The device refused this token. Check it and try again."
+    },
+    "remove": {
+      "action": "Remove",
+      "title": "Remove {{name}}?",
+      "text": "Its history is deleted too. The device itself keeps working and can be added again.",
+      "submit": "Remove device"
+    },
+    "scan": {
+      "title": "Find devices on the network",
+      "ranges": "Network ranges",
+      "rangesHelp": "Comma-separated, for example 10.1.2.0/23. At most 1024 addresses.",
+      "submit": "Scan the network",
+      "running": "Scanning. It takes a few seconds.",
+      "result_one": "{{count}} device found among {{scanned}} addresses in {{seconds}} s.",
+      "result_other": "{{count}} devices found among {{scanned}} addresses in {{seconds}} s.",
+      "registered": "Added",
+      "addThis": "Add {{name}}"
+    },
+    "form": {
+      "name": "Name",
+      "bytes": "{{count}} of {{max}} bytes (accents count twice)",
+      "nameRequired": "Enter a name.",
+      "nameTooLong": "Too long for the device: shorten it.",
+      "open_s": "Opening time (seconds)",
+      "open_sHelp": "How long the door takes to open: {{min}} to {{max}}.",
+      "close_s": "Close confirmation (seconds)",
+      "close_sHelp": "Time for the sensor to confirm a close: {{min}} to {{max}}.",
+      "light_s": "Light time (seconds)",
+      "light_sHelp": "How long the light stays on by default: {{min}} to {{max}}.",
+      "night_level": "Night level",
+      "night_levelHelp": "Light sensor reading from which it is night: {{min}} to {{max}}.",
+      "display": "LED matrix on",
+      "range": "Between {{min}} and {{max}}.",
+      "refused": "The device refused this value.",
+      "nothing": "Nothing to save: no changes.",
+      "saved": "Settings saved."
+    },
+    "restart": {
+      "action": "Restart",
+      "help": "Restarts the device. It is back in a few seconds.",
+      "title": "Restart {{name}}?",
+      "text": "The device stops answering for a few seconds. It cannot restart while the door moves.",
+      "done": "Restarting."
+    },
+    "token": {
+      "title": "Access token",
+      "help": "The device asks for it on every command and on its own web page.",
+      "show": "Show the token",
+      "revealTitle": "Access token of {{name}}",
+      "revealText": "Showing the token is recorded. Anyone who sees it can operate the device.",
+      "current": "Token",
+      "previous": "Previous token",
+      "previousHelp": "A change of token was not confirmed: the device may still use the previous one.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "rotate": "Change the token",
+      "rotateTitle": "Change the token of {{name}}?",
+      "rotateText": "The platform sets a new token on the device. Its own web page will ask for the new one.",
+      "rotated": "Token changed."
+    },
+    "connection": {
+      "title": "Change address or token",
+      "token": "Access token",
+      "tokenHelp": "Only if the device's token changed elsewhere. Leave it empty to keep the stored one.",
+      "saved": "Connection saved."
     }
   }
 }

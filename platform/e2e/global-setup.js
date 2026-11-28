@@ -13,6 +13,6 @@ export default async function globalSetup(config) {
   await page.getByLabel('First name').fill('Ada');
   await page.getByLabel('Last name').fill('Admin');
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await browser.close();
 }

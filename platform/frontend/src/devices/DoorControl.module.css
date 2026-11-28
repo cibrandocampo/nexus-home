@@ -1,0 +1,20 @@
+/* The door's state is the one large thing on a card: what people look at first. */
+.state {
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--mantine-color-text);
+}
+
+.state[data-state='opening'],
+.state[data-state='closing'] {
+  color: var(--mantine-primary-color-filled);
+}
+
+/* Door and light buttons are used from a phone at the door: 44 px touch targets there (WCAG 2.5.8
+   asks 24 px; the app's rule is 44 to 48 px on mobile). */
+@media (max-width: 48em) {
+  .action {
+    --button-height: 2.75rem;
+  }
+}

@@ -36,4 +36,5 @@ export const withSession = (user = makeUser()) =>
 export const server = setupServer(
   http.post('/api/auth/refresh', unauthorized),
   http.get('/api/auth/config', () => HttpResponse.json({ allow_self_signup: false })),
+  http.get('/api/devices', () => HttpResponse.json({ items: [], total: 0, page: 1, size: 100 })),
 );

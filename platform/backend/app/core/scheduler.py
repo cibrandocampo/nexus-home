@@ -5,14 +5,16 @@ import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, exists, func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.auth.models import FailedLogin, LoginCode, RefreshToken
 from app.core import ratelimit
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
+from app.devices.models import DeviceBoot, DeviceEvent
 from app.users.models import AuthMethod, Role, User
 
 log = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ log = logging.getLogger(__name__)
 INTERVAL_SECONDS = 3600
 LOCK_TIMEOUT_MS = 200  # below Postgres' deadlock_timeout (1 s)
 LOCK_NOT_AVAILABLE = "55P03"
+Latest = aliased(DeviceBoot)
 
 
 def _skip_locked(model, *conditions):
@@ -35,7 +38,8 @@ def _skip_locked(model, *conditions):
 async def cleanup(db: AsyncSession) -> None:
     """Delete sign-ups never confirmed with a code after `unverified_signup_days` (only those an
     admin has not given a role), expired login codes, old failed logins and refresh tokens expired
-    more than 7 days ago; forget rate-limit keys with no recent hits.
+    more than 7 days ago, device events older than `event_retention_days` and the boots they leave
+    empty; forget rate-limit keys with no recent hits.
 
     One statement per transaction, users first, locked rows skipped (see `_skip_locked`), and a
     short lock timeout on whatever a statement still has to wait for: the clean-up never waits
@@ -56,6 +60,18 @@ async def cleanup(db: AsyncSession) -> None:
         _skip_locked(LoginCode, LoginCode.expires_at < now),
         _skip_locked(FailedLogin, FailedLogin.created_at < now - timedelta(days=1)),
         _skip_locked(RefreshToken, RefreshToken.expires_at < now - timedelta(days=7)),
+        _skip_locked(
+            DeviceEvent, DeviceEvent.at < now - timedelta(days=settings.event_retention_days)
+        ),
+        # Boots left without events (and not the latest of their device, which the next read uses).
+        _skip_locked(
+            DeviceBoot,
+            ~exists().where(DeviceEvent.boot_id == DeviceBoot.id),
+            DeviceBoot.id
+            != select(func.max(Latest.id))
+            .where(Latest.device_pk == DeviceBoot.device_pk)
+            .scalar_subquery(),
+        ),
     )
     for statement in statements:
         try:

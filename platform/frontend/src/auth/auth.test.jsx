@@ -24,7 +24,7 @@ describe('session', () => {
     server.use(withSession(makeUser({ language: 'gl', theme: 'dark' })));
     renderWithProviders(<AppRoutes />);
 
-    expect(await screen.findByRole('heading', { name: 'Benvida' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Inicio' })).toBeInTheDocument();
     expect(i18n.resolvedLanguage).toBe('gl');
     expect(document.documentElement).toHaveAttribute('data-mantine-color-scheme', 'dark');
   });
@@ -41,7 +41,7 @@ describe('session', () => {
     server.use(withSession());
     renderWithProviders(<AppRoutes />, { route: '/waiting' });
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
   it('sends a user without a name to the welcome step', async () => {
@@ -71,7 +71,7 @@ describe('session', () => {
   it('goes back to the login page when the server ends the session', async () => {
     server.use(withSession(), http.get('/api/things', unauthorized));
     renderWithProviders(<AppRoutes />);
-    await screen.findByRole('heading', { name: 'Welcome' });
+    await screen.findByRole('heading', { name: 'Home' });
     server.use(http.post('/api/auth/refresh', unauthorized));
 
     await act(() => api('/things').catch(() => {}));

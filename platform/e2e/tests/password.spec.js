@@ -20,7 +20,7 @@ test('a password account signs in', async ({ page }) => {
 
   await loginWithPassword(page, email, PASSWORD);
 
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
 });
 
 test('a wrong password is explained', async ({ page }) => {

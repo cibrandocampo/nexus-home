@@ -14,3 +14,6 @@ jinja2~=3.1
 # The full IANA database, legacy names included: browsers still report some zones by their old
 # names (Asia/Calcutta, Europe/Kiev) and Debian's tzdata no longer ships those.
 tzdata
+# Device client (the boards' /api/v1) and device tokens at rest (Fernet).
+httpx~=0.28.0
+cryptography~=50.0

@@ -33,6 +33,9 @@ See the platform-architecture skill for the folders. Rules:
 - Server state with TanStack Query: one hook per query/mutation (`useUsers`, `useUpdateUser`…), query
   keys starting with the resource (`['users', …]`), mutations invalidate their resource. Errors without
   a local handler show a toast (`notifyError`); dialogs show their own `ErrorAlert`.
+- A query whose page shows its own error (a "not found" heading) sets `meta: { handlesErrors: true }`
+  (no toast) and stops its `refetchInterval` on error. Live pages refetch every 2 s while visible
+  (`devices/devicesApi.js`: the platform polls the boards at that pace).
 - Session state only in `AuthContext` (`useAuth()`: `user`, `status`, `loginStart`, `loginVerify`,
   `updateProfile`, `changePassword`, `logout`). No other global store.
 - Map API error `code`s to translated messages; unknown codes fall back to a generic message.

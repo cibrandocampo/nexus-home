@@ -53,6 +53,9 @@ def fresh_state():
     for limit in ratelimit.ALL:
         limit.reset()
     sender.outbox.clear()
+    from app.devices.bus import bus
+
+    bus.reset()
     blocked_domains.cache_clear()
     ratelimit._trusted_networks.cache_clear()
     yield
@@ -103,3 +106,16 @@ def make_user(db):
         return user
 
     return make
+
+
+@pytest.fixture(autouse=True)
+def lan(monkeypatch):
+    """The boards the backend can reach: none until a test adds one (tests/fakeboard.py)."""
+    from app.devices import client
+    from tests.fakeboard import Lan
+
+    network = Lan()
+    monkeypatch.setattr(client, "transport", network.transport())
+    client.reset_locks()
+    yield network
+    client.reset_locks()

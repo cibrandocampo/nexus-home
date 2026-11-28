@@ -34,7 +34,7 @@ describe('WelcomePage', () => {
     await userEvent.type(screen.getByLabelText(/Last name/), 'Núñez');
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
     expect(saved).toEqual({ first_name: 'Uxía', last_name: 'Núñez' });
   });
 
@@ -56,7 +56,7 @@ describe('WelcomePage', () => {
     server.use(withSession());
     renderWithProviders(<AppRoutes />, { route: '/welcome' });
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
   it('lets a new user log out', async () => {

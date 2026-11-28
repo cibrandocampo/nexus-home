@@ -25,7 +25,7 @@ test('once an administrator grants access, the user reaches the home page', asyn
   await admin.close();
 
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute(
     'aria-current',
     'page',

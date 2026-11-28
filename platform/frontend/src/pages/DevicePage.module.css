@@ -1,0 +1,27 @@
+.list {
+  margin: 0;
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-md);
+}
+
+.row dt {
+  color: var(--mantine-color-dimmed);
+}
+
+.row dd {
+  margin: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.icon {
+  display: inline-flex;
+  vertical-align: -0.15em;
+  margin-inline-end: 0.35em;
+}

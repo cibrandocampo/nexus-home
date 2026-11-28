@@ -69,8 +69,20 @@ address or the body.
 
 ## Background work
 
-Only `core/scheduler.py` (clean-up loop started in the lifespan). Periodic tasks there must be
-idempotent, short, and skip locked rows. Anything heavier needs a queue — ask first.
+Two loops, both started in the lifespan:
+
+- `core/scheduler.py`: the hourly clean-up. Periodic tasks there must be idempotent, short, and skip
+  locked rows.
+- `devices/poller.py` and `devices/history.py`: device polling and log collection (user decision
+  2026-11-27, the one exception; the collector subscribes to the bus before the poller starts). A supervisor keeps
+  one task per registered device (`notify()` after an add or remove, a resync every 30 s); each task
+  reads `GET /state` through the device client (per-host lock), saves on a new `rev`, tracks
+  online/offline and restarts, and publishes on `devices/bus.py` (in-process; slow subscribers lose
+  their oldest events). A device task never kills the supervisor; an unexpected error is logged and
+  the task resumes after a pause. Tests drive `DevicePoller.poll_once` directly; the ASGI test client
+  does not run the lifespan.
+
+Anything else needs a queue — ask first.
 
 ## Rate limits and client IP
 

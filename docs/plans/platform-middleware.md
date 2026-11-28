@@ -38,6 +38,12 @@ theme and time zone, Docker, end-to-end tests and CI.
   `platform-backend`, `platform-frontend`, `platform-security` and `platform-ci`, with paths under
   `platform/`; `dev-workflow` gains the platform's commands. This replaces the single
   `platform-patterns` skill of the first draft: the template's split already works.
+- **Home page (2026-11-27)**: the devices dashboard, a card per device with its state and quick
+  actions (door open/close/stop with confirmation, light on/off); a tap opens the device page.
+- **Board without a token (2026-11-27)**: adding one makes the platform generate a token, set it on
+  the board and store it; the admin can reveal it to use the board's own web page.
+- **Device polling (2026-11-27)**: one supervised task per device in the app process, the one
+  exception to "background work only in `core/scheduler.py`" (documented in `platform-backend`).
 - **Times**: event history and device times are stored in UTC and shown in each user's time zone (the
   template's profile setting).
 
@@ -174,7 +180,8 @@ Three phases, one PR each. Every phase leaves `main` working and deployable.
 3. Device simulator (fake garage implementing `/api/v1` from the README, with doors that move in
    simulated time), used by tests, by the dev compose and by E2E.
 
-**Phase 2 — Devices** (`feat/platform-devices`)
+**Phase 2 — Devices** (`feat/platform-devices`) — implemented 2026-11-28 in T006–T015 (PR #9); the
+bench-board checks wait for the board to be plugged in.
 4. Device model, token encryption, manual add, roles `user`/`admin` checks.
 5. Discovery scan.
 6. Polling, online/offline, event bus, state API.

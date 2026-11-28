@@ -19,7 +19,7 @@ Rewrite the garage controller from scratch (Arduino UNO R4 WiFi, door + light bu
 |------|--------|
 | New firmware in `firmware/` | 2.0.6. Builds for `arduino:renesas_uno:unor4wifi` (43 % flash, 61 % RAM) |
 | Host test of the logic (`test/run.sh`) | **Passes** |
-| Garage board | In production since 2026-11-17 (`garage-3562d4`, 10.1.3.103, modem_fw 0.6.0, RSSI -77 to -83 dBm). Installation checks done on 2026-11-19, see below |
+| Garage board | In production since 2026-11-17 (`garage-3562d4`, 10.1.3.103, modem_fw 0.6.0, RSSI -77 to -83 dBm); runs 2.0.6 since 2026-11-27 (network update with `make update`). Installation checks done on 2026-11-19, see below |
 | Web page | Works in the browser (reviewed 2026-11-19) |
 | Commit | Branch `garage-v2`, pushed; PR to `main` |
 | Old code (`src/`, Postman collection) | Deleted; recoverable from git |

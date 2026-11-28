@@ -1,0 +1,21 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+}
+
+/* Time in a narrow first column, so the eye runs down the times. */
+.entry {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: var(--mantine-spacing-sm);
+  align-items: baseline;
+}
+
+.time {
+  color: var(--mantine-color-dimmed);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

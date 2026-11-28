@@ -13,8 +13,9 @@ Paths are relative to `platform/`; run `make` targets from there.
 - Plural nouns, lowercase with hyphens, **no trailing slash** (`redirect_slashes=False`: `/api/users/`
   is a 404, not a redirect). Actions that are not CRUD are sub-paths: `POST /api/users/{id}/set-password`,
   `POST /api/auth/change-password`.
-- Integer ids (`/api/users/{user_id}`): admin-only API, enumeration is not a concern there. Use opaque
-  ids if a resource is ever exposed to non-admins.
+- Integer ids (`/api/users/{user_id}`, `/api/devices/{id}`): users are an admin-only API, and every `user`
+  can list all devices anyway, so enumeration is not a concern. Use opaque ids for a resource someone
+  must not be able to enumerate.
 - `/api/docs` and `/api/openapi.json` exist outside production only.
 
 ## Methods and statuses
@@ -29,15 +30,16 @@ Errors in use:
 
 | Status | Codes |
 |---|---|
-| 400 | `invalid_request`, `invalid_credentials`, `weak_password`, `password_required`, `password_not_allowed`, `method_mismatch`, `disposable_email` |
+| 400 | `invalid_request`, `invalid_credentials`, `weak_password`, `password_required`, `password_not_allowed`, `method_mismatch`, `disposable_email`, `device_token_invalid` (on add), `device_token_required`, `invalid_duration` and the board's other `invalid_*` setting codes, `scan_too_large`, `invalid_scan_ranges` (bad `SCAN_RANGES`) |
 | 401 | `unauthorized`, `token_expired`, `refresh_in_progress` (another tab is rotating: retry) |
 | 403 | `forbidden`, `account_disabled` |
-| 404 | `user_not_found`, `not_found` |
+| 404 | `user_not_found`, `device_not_found`, `entity_not_found`, `command_not_found`, `settings_not_supported`, `device_has_no_token`, `not_found` |
 | 405 | `method_not_allowed` (wrong method on an existing route) |
-| 409 | `email_taken`, `last_admin`, `cannot_delete_self` |
-| 422 | `validation_error` |
+| 409 | `email_taken`, `last_admin`, `cannot_delete_self`, `scan_in_progress`, `device_exists`, `device_offline`, `door_busy` (passed through from the board), `device_mismatch` (another board at that host), `device_token_invalid` (stored token refused by the board), `device_token_unreadable` (`DEVICE_TOKEN_KEY` changed) |
+| 422 | `validation_error`, `not_a_device`, `invalid_params` (parameters on a command that takes none) |
 | 429 | `rate_limited` (with `Retry-After`), `locked` (password lockout) |
 | 500 / 503 | `internal_error` / `database_unavailable` |
+| 502 | `device_unreachable` (the board did not answer), `device_error` (it answered an unexpected error), `device_save_failed`, `device_token_unconfirmed`, `device_token_unchanged` |
 
 A Starlette `HTTPException` would map to `bad_request` (400) or the generic `http_error`; no endpoint
 raises one — use `AppError`.

@@ -18,6 +18,20 @@ const ProfilePage = lazy(() =>
 const UsersPage = lazy(() =>
   import('./pages/admin/UsersPage').then((module) => ({ default: module.UsersPage })),
 );
+const DevicePage = lazy(() =>
+  import('./pages/DevicePage').then((module) => ({ default: module.DevicePage })),
+);
+const HistoryPage = lazy(() =>
+  import('./pages/HistoryPage').then((module) => ({ default: module.HistoryPage })),
+);
+const DevicesPage = lazy(() =>
+  import('./pages/admin/DevicesPage').then((module) => ({ default: module.DevicesPage })),
+);
+const DeviceSettingsPage = lazy(() =>
+  import('./pages/admin/DeviceSettingsPage').then((module) => ({
+    default: module.DeviceSettingsPage,
+  })),
+);
 
 export function AppRoutes() {
   return (
@@ -33,9 +47,14 @@ export function AppRoutes() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route element={<RequireRole min="admin" />}>
               <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/devices" element={<DevicesPage />} />
+              <Route path="/admin/devices/:id" element={<DeviceSettingsPage />} />
             </Route>
             <Route element={<RequireRole min="user" />}>
               <Route index element={<HomePage />} />
+              <Route path="/devices/:id" element={<DevicePage />} />
+              <Route path="/devices/:id/history" element={<HistoryPage />} />
+              <Route path="/history" element={<HistoryPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

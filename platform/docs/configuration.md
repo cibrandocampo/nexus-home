@@ -9,7 +9,7 @@ limits off).
 
 1. Copy `docker-compose.yml` and `.env.example` (as `.env`) to the server, for example a folder on a
    Synology NAS used as a Container Manager project.
-2. Fill in `.env`: at least `DOCKER_IMAGE`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `SITE_URL`, the SMTP
+2. Fill in `.env`: at least `DOCKER_IMAGE`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `DEVICE_TOKEN_KEY`, `SITE_URL`, the SMTP
    settings, `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
 3. Start it: `docker compose up -d` (or create the project in Container Manager). The app migrates the
    database on start and creates the first administrator from `ADMIN_EMAIL`.
@@ -96,6 +96,21 @@ in `$DATA_PATH/postgres`.
 | `ADMIN_EMAIL` | empty | With `ADMIN_PASSWORD`, created as a password administrator at start-up when no admin exists. An existing user with this email is never changed. |
 | `ADMIN_PASSWORD` | empty | Its first password; it must follow the password rules (10+ characters, not only digits, not the email) or the app refuses to start. Change it after the first login. Both empty: no administrator is created. |
 
+### Devices
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DEVICE_TOKEN_KEY` | the development key | Fernet key (url-safe base64 of 32 bytes) that encrypts the device tokens in the database. **Production refuses to start** with the development key or a malformed one. Generate one: `openssl rand -base64 32 \| tr '+/' '-_'`. Back it up with the database: if it is lost or changed, every stored token becomes unreadable and each device answers `device_token_unreadable` until an admin re-enters its token. |
+| `DEVICE_TIMEOUT_S` | `3` | Seconds to wait for a board's answer before it counts as unreachable. |
+| `SCAN_RANGES` | `10.1.2.0/23` | Default ranges of the discovery scan (admins can edit them before each scan): comma-separated IPv4 CIDRs or addresses, at most 1024 addresses in all (`scan_too_large`). |
+| `SCAN_CONCURRENCY` | `64` | Addresses probed at once (1 to 256). Each address gets one probe, so no board ever sees more than one request from the scan. |
+| `SCAN_TIMEOUT_S` | `1.5` | Seconds to wait for each address. With the defaults a /24 takes about 8 s and the default /23 about 16 s: most addresses do not answer and wait the full timeout. Each address is probed once: a board busy answering someone else at that moment can be missed; scan again. |
+| `POLL_INTERVAL_S` | `2` | Seconds between two `GET /state` reads of each device (0.5 to 60). The device page shows changes within about this time. |
+| `POLL_OFFLINE_AFTER` | `3` | Failed reads in a row before a device counts as offline. A failed read is retried after 0.5 s, so with `DEVICE_TIMEOUT_S` 3 a silent board is offline after about 12 s. |
+| `POLL_OFFLINE_INTERVAL_S` | `5` | Seconds between reads of an offline device; it is back online on the first answer. |
+| `EVENT_RETENTION_DAYS` | `365` | Days the event history is kept; the hourly clean-up deletes older events. |
+| `LOG_READ_EVERY_S` | `60` | Each online device's event log is read on every change it reports and at least this often. A board keeps only its last 64 events: more than that between two reads (a burst of commands) loses the oldest, and the platform logs a warning. |
+
 ### Device simulators (development only)
 
 Read by `dev/docker-compose.yml` for its two simulated garage boards; production ignores them.
@@ -105,6 +120,23 @@ Read by `dev/docker-compose.yml` for its two simulated garage boards; production
 | `SIM_GARAGE_A_TOKEN` | `sim-garage-a-token` | Access token of `sim-garage-a` (`garage-5e1a0a`). |
 | `SIM_GARAGE_B_TOKEN` | `sim-garage-b-token` | Access token of `sim-garage-b` (`garage-5e1a0b`). |
 | `SIM_SPEED` | `1` | Simulated seconds per real second (door travel, timers). |
+
+## Reaching the devices
+
+The app talks to the boards over plain HTTP on the LAN (`http://<board>/api/v1/…`): polling every
+`POLL_INTERVAL_S`, commands, settings and the discovery scan. With the default bridge network of
+`docker-compose.yml` the container reaches the LAN through the host (on a Synology, the NAS's own
+network; Container Manager needs no extra setting); nothing else is needed.
+
+- `SCAN_RANGES` must be the LAN where the boards live (for example `10.1.2.0/23`), not the Docker
+  network.
+- Boards get their address by DHCP: a board registered by IP that moves is followed by the next scan
+  (only when its old address no longer answers as that board, so a copied identity never receives the
+  token). Reserving their addresses on the router avoids the question.
+- The boards accept one connection at a time; the app never sends them two requests at once. Keep
+  other heavy pollers off them.
+- Firmware updates (phase 3) will need the opposite direction too: the boards download from the app's
+  LAN address and port (`DEVICE_BASE_URL`), so that port must be open to them.
 
 ## HTTPS behind a reverse proxy
 
@@ -122,7 +154,11 @@ Login Portal → Advanced → Reverse Proxy, from `https://app.example.com` to `
 
 ## Backups
 
-All state is in Postgres. A consistent dump while the stack runs:
+All state is in Postgres, except the key that decrypts the device tokens: keep a copy of
+`DEVICE_TOKEN_KEY` (from `.env`) with the backups. Without it a restored database works, but each
+device must be given its token again (Devices → device → Change address or token).
+
+A consistent dump while the stack runs:
 
 ```sh
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backup-$(date +%F).dump

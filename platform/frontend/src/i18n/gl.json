@@ -6,7 +6,9 @@
     "home": "Inicio",
     "label": "Principal",
     "profile": "Perfil",
-    "users": "Usuarios"
+    "users": "Usuarios",
+    "history": "Historial",
+    "devices": "Dispositivos"
   },
   "colorScheme": {
     "label": "Tema",
@@ -15,8 +17,9 @@
     "auto": "Sistema"
   },
   "home": {
-    "title": "Benvida",
-    "text": "Comeza a construír o teu proxecto desde aquí."
+    "title": "Inicio",
+    "empty": "Aínda non hai dispositivos.",
+    "addDevice": "Engadir un dispositivo"
   },
   "notFound": {
     "title": "Páxina non atopada",
@@ -26,7 +29,36 @@
   "errors": {
     "title": "Algo fallou",
     "generic": "Erro inesperado. Téntao de novo.",
-    "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo."
+    "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo.",
+    "door_busy": "A porta estase a mover ou acaba de accionarse. Téntao de novo nun momento.",
+    "device_offline": "O dispositivo non ten conexión. Comproba que estea aceso e na rede.",
+    "device_unreachable": "O dispositivo non respondeu. Téntao de novo nun momento.",
+    "device_error": "O dispositivo respondeu cun erro. Téntao de novo nun momento.",
+    "device_token_invalid": "O dispositivo rexeitou o token de acceso gardado. Un administrador ten que volver introducilo.",
+    "device_token_unreadable": "Non se pode ler o token de acceso gardado. Un administrador ten que volver introducilo.",
+    "invalid_duration": "Ese tempo de luz non é válido.",
+    "entity_not_found": "O dispositivo non ten esta función.",
+    "command_not_found": "O dispositivo non acepta esta acción.",
+    "device_not_found": "O dispositivo xa non existe.",
+    "invalid_params": "Esta acción non admite opcións.",
+    "device_exists": "Este dispositivo xa está engadido.",
+    "device_token_required": "Este dispositivo ten un token de acceso: introdúceo para engadilo.",
+    "not_a_device": "Non hai ningún dispositivo de nexusHome neste enderezo.",
+    "invalid_scan_ranges": "Os rangos de rede da configuración non son válidos. Revisa SCAN_RANGES.",
+    "scan_in_progress": "Xa hai unha busca en marcha. Agarda a que remate.",
+    "scan_too_large": "Estes rangos teñen máis de 1024 enderezos. Busca nun rango máis pequeno.",
+    "device_has_no_token": "Este dispositivo non ten un token de acceso gardado.",
+    "device_mismatch": "Nese enderezo responde outro dispositivo.",
+    "device_save_failed": "O dispositivo non puido gardar os seus axustes. Téntao de novo.",
+    "device_token_unchanged": "O dispositivo respondeu pero mantivo o seu token de acceso anterior.",
+    "device_token_unconfirmed": "O dispositivo non confirmou o token de acceso novo. Gárdanse os dous: revisa o dispositivo.",
+    "settings_not_supported": "Este tipo de dispositivo non ten axustes aquí.",
+    "invalid_name": "O dispositivo rexeitou este nome.",
+    "invalid_open_time": "O dispositivo rexeitou este tempo de apertura (de 5 a 100 s).",
+    "invalid_close_time": "O dispositivo rexeitou este tempo de peche (de 10 a 100 s).",
+    "invalid_light_time": "O dispositivo rexeitou este tempo de luz (de 10 a 600 s).",
+    "invalid_night_level": "O dispositivo rexeitou este nivel de noite (de 1 a 1023).",
+    "invalid_display": "O dispositivo rexeitou este axuste da pantalla."
   },
   "language": {
     "label": "Idioma"
@@ -176,6 +208,289 @@
       "validation_error": "Revisa os campos e téntao de novo.",
       "forbidden": "Xa non tes permiso para isto.",
       "generic": "Algo fallou. Téntao de novo."
+    }
+  },
+  "devices": {
+    "online": "En liña",
+    "offline": "Sen conexión",
+    "offlineSince": "Sen conexión, visto por última vez {{time}}",
+    "details": "Ver o dispositivo"
+  },
+  "door": {
+    "states": {
+      "open": "Aberta",
+      "closed": "Pechada",
+      "opening": "Abríndose",
+      "closing": "Pechándose",
+      "stopped": "Parada a medio camiño",
+      "unknown": "Descoñecido"
+    },
+    "since": "Hai {{time}}, moveuna {{source}}",
+    "since_nobody": "Hai {{time}}",
+    "sources": {
+      "button": "o pulsador",
+      "remote": "o mando",
+      "api": "a aplicación",
+      "sensor": "alguén a man (viuno o sensor)",
+      "auto": "a placa"
+    },
+    "closeFailed": "A porta non se pechou. Comproba que non haxa nada no medio.",
+    "commands": {
+      "open": "Abrir",
+      "close": "Pechar",
+      "stop": "Parar"
+    },
+    "confirm": {
+      "text": "A porta é a entrada da casa.",
+      "open": {
+        "title": "Abrir a porta de {{name}}?",
+        "action": "Abrir a porta"
+      },
+      "close": {
+        "title": "Pechar a porta de {{name}}?",
+        "action": "Pechar a porta"
+      },
+      "stop": {
+        "title": "Parar a porta de {{name}}?",
+        "action": "Parar a porta"
+      }
+    }
+  },
+  "light": {
+    "on": "Luz acesa",
+    "off": "Luz apagada",
+    "onFor": "Luz acesa, quedan {{time}}",
+    "turnOn": "Acender",
+    "turnOff": "Apagar",
+    "duration": "Manter a luz acesa",
+    "durations": {
+      "0": "Ata apagala",
+      "600": "10 minutos",
+      "3600": "1 hora",
+      "default": "O tempo habitual"
+    }
+  },
+  "device": {
+    "door": "Porta",
+    "light": "Luz",
+    "sensors": "Sensores",
+    "about": "Dispositivo",
+    "notFound": "Dispositivo non atopado",
+    "fields": {
+      "model": "Modelo",
+      "firmware": "Firmware",
+      "modem": "Módulo WiFi",
+      "address": "Enderezo",
+      "id": "Identificador",
+      "uptime": "Aceso dende hai",
+      "lastSeen": "Visto por última vez",
+      "ip": "Enderezo IP"
+    },
+    "history": "Ver o seu historial"
+  },
+  "entities": {
+    "names": {
+      "door_problem": "Problema na porta",
+      "night": "Noite",
+      "light_level": "Nivel de luz",
+      "rssi": "Sinal WiFi"
+    },
+    "values": {
+      "door_problem": {
+        "true": "A porta non se pechou",
+        "false": "Ningún"
+      },
+      "night": {
+        "true": "Noite",
+        "false": "Día"
+      }
+    },
+    "yes": "Si",
+    "no": "Non",
+    "unknown": "Descoñecido"
+  },
+  "history": {
+    "title": "Historial",
+    "deviceTitle": "Historial de {{name}}",
+    "back": "Volver a {{name}}",
+    "device": "Dispositivo",
+    "allDevices": "Todos os dispositivos",
+    "allEvents": "Todos os eventos",
+    "from": "Dende",
+    "to": "Ata",
+    "empty": "Aínda non pasou nada.",
+    "noMatch": "Ningún evento coincide con estes filtros.",
+    "by": "por {{name}}",
+    "someone": "un usuario sen nome",
+    "groups": {
+      "door": "Porta",
+      "light": "Luz",
+      "daylight": "Día e noite",
+      "device": "Dispositivo"
+    },
+    "filter": {
+      "door_opening": "Porta abríndose",
+      "door_open": "Porta aberta ou parada",
+      "door_closing": "Porta pechándose",
+      "door_closed": "Porta pechada ou parada",
+      "close_failed": "Peche fallido",
+      "button_ignored": "Pulsación ignorada",
+      "light_on": "Luz acesa",
+      "light_off": "Luz apagada",
+      "night": "Fíxose de noite",
+      "day": "Fíxose de día",
+      "boot": "Arranque",
+      "wifi_up": "Conectado ao WiFi",
+      "wifi_down": "WiFi perdido",
+      "wifi_changed": "Rede WiFi cambiada",
+      "wifi_change_failed": "Cambio de WiFi fallido",
+      "watchdog_reset": "Reinicio polo watchdog",
+      "settings_changed": "Axustes cambiados",
+      "settings_save_failed": "Axustes non gardados",
+      "setup_mode": "Modo configuración"
+    },
+    "events": {
+      "label": "Eventos",
+      "door_opening": "Porta abríndose",
+      "door_open": "Porta aberta",
+      "door_closing": "Porta pechándose",
+      "door_closed": "Porta pechada",
+      "close_failed": "A porta non se pechou tras {{time}}",
+      "button_ignored": "Pulsación do botón ignorada",
+      "light_on_timed": "Luz acesa durante {{time}}",
+      "light_on_untimed": "Luz acesa, sen temporizador",
+      "light_off": "Luz apagada",
+      "night": "Fíxose de noite",
+      "day": "Fíxose de día",
+      "boot": "O dispositivo arrincou",
+      "wifi_up": "Conectado ao WiFi",
+      "wifi_down": "Perdeuse a conexión WiFi",
+      "wifi_changed": "Rede WiFi cambiada",
+      "wifi_change_failed": "Non puido unirse á nova rede WiFi",
+      "watchdog_reset": "Reiniciado polo watchdog",
+      "settings_changed": "Axustes cambiados",
+      "settings_save_failed": "Non se puideron gardar os axustes",
+      "setup_mode": "Entrou en modo configuración"
+    },
+    "sources": {
+      "button": "pulsador ou mando",
+      "api": "aplicación",
+      "sensor": "visto polo sensor",
+      "auto": "automático"
+    },
+    "reasons": {
+      "command": "a porta estaba quieta",
+      "stopped": "a porta parouse",
+      "travel_end": "rematou o tempo de apertura",
+      "no_movement": "a porta non se moveu",
+      "sensor_closed": "confirmouno o sensor de peche",
+      "sensor_released": "a porta deixou o sensor de peche",
+      "came_back": "a porta volveu baixar",
+      "too_soon": "demasiado cedo tras a última pulsación",
+      "startup": "lido ao arrincar"
+    },
+    "pages": {
+      "first": "Primeira páxina",
+      "previous": "Páxina anterior",
+      "next": "Páxina seguinte",
+      "last": "Última páxina",
+      "page": "Páxina {{page}}"
+    },
+    "all": "Ver o historial de todos os dispositivos",
+    "pastTheEnd": "Non hai eventos nesta páxina.",
+    "firstPage": "Ir á primeira páxina"
+  },
+  "adminDevices": {
+    "title": "Dispositivos",
+    "none": "Aínda non hai dispositivos. Busca na rede aquí abaixo ou engade un polo seu enderezo.",
+    "device": "Dispositivo",
+    "status": "Estado",
+    "actions": "Accións",
+    "actionsFor": "Accións de {{name}}",
+    "settings": "Axustes",
+    "where": "{{id}} en {{host}}, firmware {{version}}",
+    "added": "{{name}} engadido.",
+    "removed": "{{name}} quitado.",
+    "back": "Volver aos dispositivos",
+    "open": "Abrir a páxina do dispositivo",
+    "settingsTitle": "Axustes de {{name}}",
+    "stored": "Gardado no dispositivo",
+    "board": "Dispositivo",
+    "add": {
+      "byAddress": "Engadir polo enderezo",
+      "title": "Engadir un dispositivo",
+      "host": "Enderezo",
+      "hostHelp": "Enderezo IP ou nome do dispositivo na túa rede.",
+      "token": "Token de acceso",
+      "tokenHelp": "Déixao baleiro se é un dispositivo novo sen token: a plataforma pónlle un.",
+      "submit": "Engadir dispositivo",
+      "short": "Engadir",
+      "tokenInvalid": "O dispositivo rexeitou este token. Revísao e téntao de novo."
+    },
+    "remove": {
+      "action": "Quitar",
+      "title": "Quitar {{name}}?",
+      "text": "Tamén se borra o seu historial. O dispositivo segue funcionando e pódese volver engadir.",
+      "submit": "Quitar dispositivo"
+    },
+    "scan": {
+      "title": "Buscar dispositivos na rede",
+      "ranges": "Rangos de rede",
+      "rangesHelp": "Separados por comas, por exemplo 10.1.2.0/23. Como moito 1024 enderezos.",
+      "submit": "Buscar na rede",
+      "running": "Buscando. Tarda uns segundos.",
+      "result_one": "{{count}} dispositivo atopado entre {{scanned}} enderezos en {{seconds}} s.",
+      "result_other": "{{count}} dispositivos atopados entre {{scanned}} enderezos en {{seconds}} s.",
+      "registered": "Engadido",
+      "addThis": "Engadir {{name}}"
+    },
+    "form": {
+      "name": "Nome",
+      "bytes": "{{count}} de {{max}} bytes (os acentos contan dobre)",
+      "nameRequired": "Escribe un nome.",
+      "nameTooLong": "Demasiado longo para o dispositivo: acúrtao.",
+      "open_s": "Tempo de apertura (segundos)",
+      "open_sHelp": "O que tarda a porta en abrirse: de {{min}} a {{max}}.",
+      "close_s": "Confirmación de peche (segundos)",
+      "close_sHelp": "Tempo para que o sensor confirme o peche: de {{min}} a {{max}}.",
+      "light_s": "Tempo de luz (segundos)",
+      "light_sHelp": "Canto queda acesa a luz por defecto: de {{min}} a {{max}}.",
+      "night_level": "Nivel de noite",
+      "night_levelHelp": "Lectura do sensor de luz a partir da que é de noite: de {{min}} a {{max}}.",
+      "display": "Matriz LED acesa",
+      "range": "Entre {{min}} e {{max}}.",
+      "refused": "O dispositivo rexeitou este valor.",
+      "nothing": "Nada que gardar: non hai cambios.",
+      "saved": "Axustes gardados."
+    },
+    "restart": {
+      "action": "Reiniciar",
+      "help": "Reinicia o dispositivo. Volve en poucos segundos.",
+      "title": "Reiniciar {{name}}?",
+      "text": "O dispositivo deixa de responder uns segundos. Non pode reiniciarse mentres a porta se move.",
+      "done": "Reiniciando."
+    },
+    "token": {
+      "title": "Token de acceso",
+      "help": "O dispositivo pídeo en cada orde e na súa propia páxina web.",
+      "show": "Ver o token",
+      "revealTitle": "Token de acceso de {{name}}",
+      "revealText": "Ver o token queda rexistrado. Quen o vexa pode manexar o dispositivo.",
+      "current": "Token",
+      "previous": "Token anterior",
+      "previousHelp": "Non se confirmou un cambio de token: o dispositivo pode seguir usando o anterior.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "rotate": "Cambiar o token",
+      "rotateTitle": "Cambiar o token de {{name}}?",
+      "rotateText": "A plataforma pon un token novo no dispositivo. A súa propia páxina web pedirá o novo.",
+      "rotated": "Token cambiado."
+    },
+    "connection": {
+      "title": "Cambiar enderezo ou token",
+      "token": "Token de acceso",
+      "tokenHelp": "Só se o token do dispositivo cambiou por outro lado. Déixao baleiro para manter o gardado.",
+      "saved": "Conexión gardada."
     }
   }
 }

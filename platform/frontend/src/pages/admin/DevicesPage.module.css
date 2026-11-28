@@ -1,0 +1,12 @@
+.table {
+  table-layout: auto;
+}
+
+.actions {
+  width: 3rem;
+  text-align: end;
+}
+
+.ranges {
+  flex: 1 1 16rem;
+}

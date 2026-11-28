@@ -19,7 +19,7 @@ async function signedInUser(page, browser) {
   await admin.close();
 
   await loginWithCode(page, email);
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   return email;
 }
 
@@ -43,7 +43,7 @@ test('the language is saved on the account', async ({ page, browser }) => {
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible();
   const other = await freshBrowserSignIn(browser, email);
-  await expect(other.page.getByRole('heading', { name: 'Bienvenida', exact: true })).toBeVisible();
+  await expect(other.page.getByRole('heading', { name: 'Inicio', exact: true })).toBeVisible();
   await other.context.close();
 });
 
@@ -74,7 +74,7 @@ test('the time zone is saved on the account', async ({ page, browser }) => {
   await expect(zone).toHaveText(/^Europe\/Lisbon/);
 
   const other = await freshBrowserSignIn(browser, email);
-  await expect(other.page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(other.page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await other.page.goto('/profile');
   await expect(other.page.getByRole('button', { name: 'Time zone' })).toHaveText(/^Europe\/Lisbon/);
   await other.context.close();
@@ -91,7 +91,7 @@ test('a password account changes its password and signs in with the new one', as
   await createUser(adminPage, { email, method: 'Password', password: 'e2e-first-password-1' });
   await admin.close();
   await loginWithPassword(page, email, 'e2e-first-password-1');
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await page.goto('/profile');
 
   // The key opens a dialog; its submit button has the same name as the key.
@@ -109,5 +109,5 @@ test('a password account changes its password and signs in with the new one', as
   await logout(page);
 
   await loginWithPassword(page, email, 'e2e-new-password-1');
-  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
 });

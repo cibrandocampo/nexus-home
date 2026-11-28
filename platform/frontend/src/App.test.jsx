@@ -12,7 +12,7 @@ describe('App', () => {
     server.use(withSession());
     renderWithProviders(<AppRoutes />);
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'nexusHome' })).toBeInTheDocument();
   });
 
@@ -28,7 +28,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'Go to the home page' }));
-    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
   it('switches the colour scheme and saves it in the profile (welcome step)', async () => {

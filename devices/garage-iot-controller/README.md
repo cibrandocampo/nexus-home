@@ -344,6 +344,15 @@ open and close are offered.
 `pin` for the reset button, `software` after a firmware upload or a restart, or `watchdog`), MAC, hostname
 (the device id) and this entity list, which is what a middleware needs to register the device.
 
+## Platform
+
+The nexusHome platform (`platform/`) manages this board through the API above: it finds it with a
+scan of the LAN, keeps its state and event history (with who sent each command), sends commands and
+changes its stored settings and token. A board added without a token gets one from the platform; its
+administrators can show it for this web page. The simulator in `platform/simulator` speaks the same
+API for the platform's tests, and its contract test fails when this README or `firmware/http.cpp`
+change the API: update the simulator with them.
+
 ## Build and upload
 
 The toolchain runs in Docker (`docker/Dockerfile`: `g++`, `python3`, `arduino-cli` 1.6.0 and the

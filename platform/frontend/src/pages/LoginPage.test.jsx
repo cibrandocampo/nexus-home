@@ -49,7 +49,7 @@ describe('LoginPage', () => {
     await userEvent.type(await screen.findByLabelText(/Password/), 'correct horse battery');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
     expect(body).toEqual({ email: 'ana@example.com', password: 'correct horse battery' });
   });
 
@@ -175,7 +175,7 @@ describe('LoginPage', () => {
     );
     renderWithProviders(<AppRoutes />, { route: '/login' });
 
-    expect(await screen.findByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
   it('names the code group and each of its digits', async () => {
