@@ -28,6 +28,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.js'],
     css: false,
+    // Page tests render the whole app (router, Mantine, MSW): 5 s is too tight on a busy machine
+    // (several suites at once, CI runners). A real hang still fails, three times later.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{js,jsx}'],

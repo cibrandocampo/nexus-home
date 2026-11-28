@@ -39,6 +39,23 @@ T006 ─┬─► T007 ───────────────────
                                            └─► T013 ────────┘
 ```
 
-Phase 3 (firmware) gets its series when phase 2 is merged.
+## Series T016–T022 — Platform, phase 3: firmware
+Plan: [docs/plans/platform-middleware.md](../plans/platform-middleware.md) · Branch: `feat/platform-firmware`
+
+| ID | Title | Depends on | Status | QA |
+|----|-------|------------|--------|----|
+| T016 | Firmware release workflow | — | Completed (DoD 2 after push; DoD 4: user) | Approved |
+| T017 | `.bin` → `.ota` converter in the platform | — | Completed | Approved |
+| T018 | Firmware catalogue: GitHub sync and uploads | T017 | Pending | — |
+| T019 | Simulator: firmware updates | — | Completed | — |
+| T020 | Firmware updates from the platform | T018, T019 | Pending | — |
+| T021 | Frontend: firmware | T020 | Pending | — |
+| T022 | Firmware end-to-end, deployment docs, a real OTA on the bench board | T016, T021 | Pending | — |
+
+```
+T016 ───────────────────────────────────────┐
+T017 ──► T018 ─┐                            ▼
+T019 ──────────┴─► T020 ──► T021 ──────────► T022
+```
 
 Status: `Pending` → `In progress` → `Completed`. QA: `—` → `Approved` / `Returned (B1…)`.
